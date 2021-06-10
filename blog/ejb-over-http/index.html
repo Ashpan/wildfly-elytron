@@ -134,7 +134,25 @@
 </div>
 </div>
       <div class="grid__item width-12-12">
-          <div class="paragraph">
+          <div id="toc" class="toc">
+<div id="toctitle" class="title"></div>
+<ul class="sectlevel1">
+<li><a href="#server-configuration">Server Configuration</a>
+<ul class="sectlevel2">
+<li><a href="#prerequisite-configuration">Prerequisite Configuration</a></li>
+<li><a href="#configure-the-http-transport">Configure the HTTP Transport</a></li>
+</ul>
+</li>
+<li><a href="#client-configuration">Client Configuration</a>
+<ul class="sectlevel2">
+<li><a href="#prerequisite-configuration-2">Prerequisite Configuration</a></li>
+<li><a href="#performing-invocations">Performing Invocations</a></li>
+</ul>
+</li>
+<li><a href="#summary">Summary</a></li>
+</ul>
+</div>
+<div class="paragraph">
 <p>The <strong><a href="https://github.com/wildfly-security-incubator/elytron-examples/tree/master/ejb-http">ejb-http</a></strong> quickstart will describe the steps to setting up EJBs using HTTP as the transport. It will also secure it with a FileSystem realm, and use a credential store to access the EJB. This will focus on the configuration of the server to allow it to communicate over HTTP.</p>
 </div>
 <div class="sect1">
@@ -195,22 +213,6 @@
 <pre class="highlightjs highlight"><code class="language-none hljs">/subsystem=ejb3/application-security-domain=other:add(security-domain=fsSD)</code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p>To create a credential store, we run the following command, which creates it in the path specified after the --location flag, and secures it with the password specified after the --password flag (in this case it is “StorePassword”):</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-none hljs">WILDFLY_HOME/bin/elytron-tool.sh credential-store --create --location "/PATH/TO/mycredstore.cs" --password StorePassword</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>We now create an alias that will allow us to have access to the credential store password when accessing the EJB. In this case the alias username is “quickstartUser”, and the password is “quickstartPwd1!”:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlightjs highlight"><code class="language-none hljs">WILDFLY_HOME/bin/elytron-tool.sh credential-store --location "/PATH/TO/mycredstore.cs" --password StorePassword --add quickstartUser --secret quickstartPwd1!</code></pre>
-</div>
-</div>
 </div>
 <div class="sect2">
 <h3 id="configure-the-http-transport"><a class="anchor" href="#configure-the-http-transport"></a>Configure the HTTP Transport</h3>
@@ -248,35 +250,70 @@ Here we set the mechanism to BASIC (but could also be set to another HTTP mechan
 <div class="sect2">
 <h3 id="prerequisite-configuration-2"><a class="anchor" href="#prerequisite-configuration-2"></a>Prerequisite Configuration</h3>
 <div class="paragraph">
-<p><code>wildfly-config-xml</code></p>
+<p>To create a credential store, we run the following command, which creates it in the path specified after the --location flag, and secures it with the password specified after the --password flag (in this case it is “StorePassword”):</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">&lt;credential-stores&gt;
-    &lt;credential-store name="mycredstore"&gt;
-        &lt;attributes&gt;
-            &lt;attribute name="keyStoreType" value="JCEKS"/&gt;
-            &lt;attribute name="location" value="/PATH/TO/mycredstore.cs"&gt;&lt;/attribute&gt;
-        &lt;/attributes&gt;
-        &lt;protection-parameter-credentials&gt;
-            &lt;clear-password password="StorePassword"/&gt;
-        &lt;/protection-parameter-credentials&gt;
-    &lt;/credential-store&gt;
-&lt;/credential-stores&gt;</code></pre>
+<pre class="highlightjs highlight"><code class="language-none hljs">WILDFLY_HOME/bin/elytron-tool.sh credential-store --create --location "/PATH/TO/mycredstore.cs" --password StorePassword</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>We now create an alias that will hold the password to use when accessing the EJB. In this case the alias username is “quickstartUser”, and the password is “quickstartPwd1!”:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">WILDFLY_HOME/bin/elytron-tool.sh credential-store --location "/PATH/TO/mycredstore.cs" --password StorePassword --add quickstartUser --secret quickstartPwd1!</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If we access the <code>wildfly-config-xml</code>, the following file should appear</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">&lt;configuration&gt;
+    &lt;authentication-client xmlns="urn:elytron:client:1.5"&gt;
+        &lt;credential-stores&gt;
+            &lt;credential-store name="mycredstore"&gt;
+                &lt;attributes&gt;
+                    &lt;attribute name="keyStoreType" value="JCEKS"/&gt;
+                    &lt;attribute name="location" value="/PATH/TO/mycredstore.cs"&gt;&lt;/attribute&gt;
+                &lt;/attributes&gt;
+                &lt;protection-parameter-credentials&gt;
+                    &lt;clear-password password="StorePassword"/&gt;
+                &lt;/protection-parameter-credentials&gt;
+            &lt;/credential-store&gt;
+        &lt;/credential-stores&gt;
+
+        &lt;authentication-rules&gt;
+            &lt;rule use-configuration="default-config"/&gt;
+        &lt;/authentication-rules&gt;
+        &lt;authentication-configurations&gt;
+            &lt;configuration name="default-config"&gt;
+                &lt;set-user-name name="quickstartUser"/&gt;
+                &lt;credentials&gt;
+                    &lt;credential-store-reference store="mycredstore" alias="quickstartUser"/&gt;
+                &lt;/credentials&gt;
+                &lt;providers&gt;
+                    &lt;use-service-loader /&gt;
+                &lt;/providers&gt;
+            &lt;/configuration&gt;
+        &lt;/authentication-configurations&gt;
+    &lt;/authentication-client&gt;
+&lt;/configuration&gt;</code></pre>
 </div>
 </div>
 <div class="paragraph">
 <p>Here we can see the definition of the credential store.
-Make sure to change the path from "/PATH/TO/mycredstore.cs", to the same path as when configuring the credential store. Also ensure that the path here is the absolute path, starting from <code>/</code></p>
+Make sure to change the path from "/PATH/TO/mycredstore.cs", to the same path as when configuring the credential store. Also ensure that the path here is the absolute path, starting with a <code>/</code></p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="provider-url"><a class="anchor" href="#provider-url"></a>Provider URL</h3>
+<h3 id="performing-invocations"><a class="anchor" href="#performing-invocations"></a>Performing Invocations</h3>
 <div class="paragraph">
-<p>When creating the context in your Client Application, the <code>PROVIDER_URL</code> field should be changed.
-Originally it is:<br>
+<p>When creating the <code>InitialContext</code> in your Client Application, the <code>PROVIDER_URL</code> field should be changed.
+When using EJB over the Remoting protocol, the <code>PROVIDER_URL</code> is set to:<br>
 <code>"remote+http://localhost:8080"</code><br>
-and it should be changed to:<br>
+Since we now want to use EJB over HTTP, the <code>PROVIDER_URL</code> should be changed to:<br>
 <code>"http://localhost:8080/wildfly-services"</code></p>
 </div>
 <div class="paragraph">
