@@ -201,8 +201,8 @@
 <h2 id="configure-the-http-transport"><a class="anchor" href="#configure-the-http-transport"></a>Configure the HTTP Transport</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>First we must configure the http-authentication-factory the server to authenticate over HTTP.
-Here we could set the mechanism to either BASIC (but could also be set to FORM), point to the fsSD security-domain, and the fsRealm filesystem-realm and we call it example-http-auth</p>
+<p>First we must configure the http-authentication-factory for the server to authenticate over HTTP.
+Here we set the mechanism to BASIC (but could also be set to FORM), point to the fsSD security-domain, and the fsRealm filesystem-realm, and we call the newly created http-authentication-factory, example-http-auth</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -231,7 +231,7 @@ Here we could set the mechanism to either BASIC (but could also be set to FORM),
 <h2 id="configure-the-credential-store"><a class="anchor" href="#configure-the-credential-store"></a>Configure the Credential Store</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>To create a credential store, we run the following command, which creates it in the path specified after the --location flag, and locks it with the password specified after the --password flag (in the case it is “StorePassword”)</p>
+<p>To create a credential store, we run the following command, which creates it in the path specified after the --location flag, and secures it with the password specified after the --password flag (in this case it is “StorePassword”)</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -239,7 +239,7 @@ Here we could set the mechanism to either BASIC (but could also be set to FORM),
 </div>
 </div>
 <div class="paragraph">
-<p>We then create an alias to be able to access this credential store with a different username as password, in this case the username being “quickstartUser”, and the password being “quickstartPwd1!”</p>
+<p>We then create an alias to be able to access this credential store with a different username and password, in this case the username being “quickstartUser”, and the password being “quickstartPwd1!”</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -268,7 +268,7 @@ Here we could set the mechanism to either BASIC (but could also be set to FORM),
 </div>
 <div class="paragraph">
 <p>Here we can see the definition of the credential store.
-Make sure to change the path from "/PATH/TO/mycredstore.cs", to the actual absolute path specified when configuring the credential store.</p>
+Make sure to change the path from "/PATH/TO/mycredstore.cs", to the same path as when configuring the credential store. Also ensure that the path here is the absolute path, starting from <code>/</code></p>
 </div>
 </div>
 </div>
@@ -276,7 +276,7 @@ Make sure to change the path from "/PATH/TO/mycredstore.cs", to the actual absol
 <h2 id="summary"><a class="anchor" href="#summary"></a>Summary</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This blog post has given an overview on how to create an EJB over HTTP and authenticate with a FileSystem realm, and a credential-store to invoke the EJB.</p>
+<p>This blog post has given an overview on how to create an EJB over HTTP, authenticate it with a FileSystem realm, and use a credential-store to invoke the EJB.</p>
 </div>
 </div>
 </div>
