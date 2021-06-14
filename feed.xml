@@ -5,7 +5,7 @@
         <title>WildFly Elytron</title>
         <link>https://wildfly-security.github.io/wildfly-elytron</link>
         <description>WildFly Elytron: Security, Authentication, and Authorization SPIs for the WildFly project</description>
-        <lastBuildDate>Mon, 14 Jun 2021 14:12:35 +0000</lastBuildDate>
+        <lastBuildDate>Mon, 14 Jun 2021 14:13:52 +0000</lastBuildDate>
         
         <item>
             <title>Invoking EJBs over HTTP</title>
@@ -16,20 +16,6 @@
                 Server Configuration Prerequisite Configuration Configure the HTTP Transport Client Configuration Prerequisite Configuration Performing Invocations Summary The ejb-http quickstart will describe the steps to setting up EJBs using HTTP as the transport. It will also secure it with a FileSystem realm, and use a credential store to access the EJB. This...
             </description>
             <pubDate>Mon, 14 Jun 2021 00:00:00 +0000</pubDate>
-            <guid>
-                https://wildfly-security.github.io/wildfly-elytron/blog/ejb-over-http/
-            </guid>
-        </item>
-        
-        <item>
-            <title>Invoking EJBs over HTTP</title>
-            <link>
-                https://wildfly-security.github.io/wildfly-elytron/blog/ejb-over-http/
-            </link>
-            <description>
-                Server Configuration Prerequisite Configuration Configure the HTTP Transport Client Configuration Prerequisite Configuration Performing Invocations Summary The ejb-http quickstart will describe the steps to setting up EJBs using HTTP as the transport. It will also secure it with a FileSystem realm, and use a credential store to access the EJB. This...
-            </description>
-            <pubDate>Thu, 10 Jun 2021 00:00:00 +0000</pubDate>
             <guid>
                 https://wildfly-security.github.io/wildfly-elytron/blog/ejb-over-http/
             </guid>
@@ -144,6 +130,20 @@
             <pubDate>Fri, 22 Jan 2021 00:00:00 +0000</pubDate>
             <guid>
                 https://wildfly-security.github.io/wildfly-elytron/blog/planned-security-features-for-wildfly-23/
+            </guid>
+        </item>
+        
+        <item>
+            <title>Automatic Self-Signed Certificate Generation with Elytron</title>
+            <link>
+                https://wildfly-security.github.io/wildfly-elytron/blog/auto-self-signed-certificate-generation/
+            </link>
+            <description>
+                WildFly 22 adds the ability to automatically generate a self-signed certificate the first time WildFly receives an HTTPS request when WildFly is being secured using Elytron. This is useful for development or testing environments. This blog post gives an introduction to this new feature. Default SSL context Making use of...
+            </description>
+            <pubDate>Thu, 14 Jan 2021 00:00:00 +0000</pubDate>
+            <guid>
+                https://wildfly-security.github.io/wildfly-elytron/blog/auto-self-signed-certificate-generation/
             </guid>
         </item>
         
