@@ -135,6 +135,16 @@ pre > code, table code { border: none; background-color: transparent; }
 .blog-page, .post-page, .getting-started-page { padding: 10px 20px; }
 .blog-page a, .blog-page p, .post-page a, .post-page p, .getting-started-page a, .getting-started-page p { font-size: 18px; }
 
+td.content > .title, .audioblock > .title, .exampleblock > .title, .imageblock > .title, .listingblock > .title, .literalblock > .title, .stemblock > .title, .openblock > .title, .paragraph > .title, .quoteblock > .title, table.tableblock > .title, .verseblock > .title, .videoblock > .title, .dlist > .title, .olist > .title, .ulist > .title, .qlist > .title, .hdlist > .title { line-height: 1.45; font-weight: 400; margin-top: 0; margin-bottom: .25em; }
+
+td.content > .title, .audioblock > .title, .exampleblock > .title, .imageblock > .title, .listingblock > .title, .literalblock > .title, .stemblock > .title, .openblock > .title, .paragraph > .title, .quoteblock > .title, table.tableblock > .title, .verseblock > .title, .videoblock > .title, .dlist > .title, .olist > .title, .ulist > .title, .qlist > .title, .hdlist > .title { text-rendering: optimizeLegibility; text-align: left; font-size: 1rem; font-style: italic; }
+
+.quoteblock blockquote::before { content: "\201c"; float: left; font-size: 2.75em; font-weight: bold; line-height: .6em; margin-left: -.6em; color: #943000; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
+
+.quoteblock blockquote::before { content: "\201c"; float: left; font-size: 2.75em; font-weight: bold; line-height: .6em; margin-left: -.6em; color: #4695EB; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); }
+
+.quoteblock blockquote::after { content: ""; }
+
 .getting-started-page h1 { color: #004153 !important; font-size: 35px; font-weight: 600; }
 .getting-started-page h2 { font-size: 22px; font-weight: 600; }
 .getting-started-page h3 { font-size: 20px; font-weight: 600; }
