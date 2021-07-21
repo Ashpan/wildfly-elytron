@@ -153,6 +153,9 @@ details, .audioblock, .imageblock, .literalblock, .listingblock, .stemblock, .vi
 
 td.content > .title, .audioblock > .title, .exampleblock > .title, .imageblock > .title, .listingblock > .title, .literalblock > .title, .stemblock > .title, .openblock > .title, .paragraph > .title, .quoteblock > .title, table.tableblock > .title, .verseblock > .title, .videoblock > .title, .dlist > .title, .olist > .title, .ulist > .title, .qlist > .title, .hdlist > .title { text-rendering: optimizeLegibility; text-align: left; font-size: 1rem; font-style: italic; }
 
+.imageblock > .content > img { width: 30vw; }
+@media screen and (max-width: 1024px) { .imageblock > .content > img { width: 80vw; } }
+
 .quoteblock blockquote::before { content: "\201c"; float: left; font-size: 2.75em; font-weight: bold; line-height: .6em; margin-left: -.6em; color: #004153; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); padding-left: 30px; }
 
 .text-center { text-align: center !important; }
