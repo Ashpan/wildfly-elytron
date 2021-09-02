@@ -56,7 +56,7 @@ import org.wildfly.security.password.WildFlyElytronPasswordProvider;
 import org.wildfly.security.password.spec.Encoding;
 
 /**
- * Elytron-Tool command to convert un-encrypted FileSystemRealms into an encrypted realm with the use of a SecreKey.
+ * Elytron-Tool command to convert un-encrypted FileSystemRealms into an encrypted realm with the use of a SecretKey.
  * Also, optionally provides a WildFly CLI script to register the FileSystemRealm and corresponding
  * security-domain in WildFly.
  * @author <a href="mailto:araskar@redhat.com">Ashpan Raskar</a>
@@ -64,7 +64,7 @@ import org.wildfly.security.password.spec.Encoding;
 
 class FileSystemEncryptRealmCommand extends Command {
     static final int GENERAL_CONFIGURATION_WARNING = 1;
-    static final String FILE_SYSTEM_ENCRYPT_COMMAND = "filesystem-encrypt";
+    static final String FILE_SYSTEM_ENCRYPT_COMMAND = "filesystem-realm-encrypt";
     static final int SUMMARY_WIDTH = 100;
 
     private static final String HELP_PARAM = "help";
@@ -318,7 +318,7 @@ class FileSystemEncryptRealmCommand extends Command {
                 try {
                     descriptor.setHashCharset(Charset.forName(hashCharsetOption));
                 } catch (UnsupportedCharsetException e) {
-//                    Error
+                    errorHandler(e);
                 }
             }
             if (hashEncodingOption == null) {
@@ -327,7 +327,7 @@ class FileSystemEncryptRealmCommand extends Command {
                 try {
                     descriptor.setHashEncoding(Encoding.valueOf(hashEncodingOption.toUpperCase()));
                 } catch (IllegalArgumentException | NullPointerException e) {
-//                    Error
+                    errorHandler(e);
                 }
             }
             if (levelsOption == null) {
@@ -336,7 +336,7 @@ class FileSystemEncryptRealmCommand extends Command {
                 try {
                     descriptor.setLevels(Integer.parseInt(levelsOption));
                 } catch (NumberFormatException e) {
-//                    Error
+                    errorHandler(e);
                 }
             }
             if (encodedOption == null) {
@@ -572,15 +572,15 @@ class FileSystemEncryptRealmCommand extends Command {
     private void findMissingRequiredValuesAndSetValues(int count, Descriptor descriptor) {
         boolean missingRequiredValue = false;
         if (descriptor.getInputRealmLocation() == null) {
-            warningHandler(ElytronToolMessages.msg.skippingDescriptorBlock(count, "missing input realm location"));
+            warningHandler(ElytronToolMessages.msg.skippingDescriptorBlockInputLocation(count));
             missingRequiredValue = true;
         }
         if (descriptor.getOutputRealmLocation() == null) {
-            warningHandler(ElytronToolMessages.msg.skippingDescriptorBlock(count, "missing output realm location"));
+            warningHandler(ElytronToolMessages.msg.skippingDescriptorBlockOutputLocation(count));
             missingRequiredValue = true;
         }
         if (descriptor.getFileSystemRealmName() == null) {
-            warningHandler(ElytronToolMessages.msg.skippingDescriptorBlock(count, "missing new filesystem realm name"));
+            warningHandler(ElytronToolMessages.msg.skippingDescriptorBlockFilesystemRealmName(count));
             missingRequiredValue = true;
         }
         if(descriptor.getHashCharset() == null) {
@@ -613,7 +613,7 @@ class FileSystemEncryptRealmCommand extends Command {
                 continue;
             }
             CredentialStore credentialStore;
-            // check if credential-store and secret-key-alias are both specified, or both null
+//            check if credential-store and secret-key-alias are both specified, or both null
             if (! (descriptor.getCredentialStore() == null ^ descriptor.getSecretKeyAlias() == null) ){
                 boolean isNew = false;
                 if (descriptor.getCredentialStore() == null) {
@@ -668,10 +668,9 @@ class FileSystemEncryptRealmCommand extends Command {
 
             FileSystemSecurityRealm newFileSystemRealm = FileSystemSecurityRealm.builder()
                     .setRoot(Paths.get(descriptor.getOutputRealmLocation(), descriptor.getFileSystemRealmName()))
-                    .setLevels(descriptor.getLevels())
-                    .setHashEncoding(descriptor.getHashEncoding())
-                    .setProviders(ELYTRON_PASSWORD_PROVIDERS)
                     .setSecretKey(key)
+                    .setLevels(descriptor.getLevels())
+                    .setProviders(ELYTRON_PASSWORD_PROVIDERS)
                     .build();
             FileSystemRealmUtil.createEncryptedRealmFromUnencrypted(oldFileSystemRealm, newFileSystemRealm);
         }
@@ -691,7 +690,6 @@ class FileSystemEncryptRealmCommand extends Command {
             String credentialStore = descriptor.getCredentialStore();
             String secretKeyAlias = descriptor.getSecretKeyAlias();
             int levels = descriptor.getLevels();
-            Encoding hashEncoding = descriptor.getHashEncoding();
             Charset hashCharset = descriptor.getHashCharset();
 
             if(secretKeyAlias == null) {
@@ -721,12 +719,10 @@ class FileSystemEncryptRealmCommand extends Command {
                 summaryString.append(String.format("Name of filesystem-realm: %s", fileSystemRealmName));
                 summaryString.append(System.getProperty("line.separator"));
             }
-//        /subsystem=elytron/secret-key-credential-store=mycredstore:add(path=propcredstore.cs, relative-to=jboss.server.config.dir, create=true, populate=true)
-//        /subsystem=elytron/filesystem-realm=fsRealm:add(path=fs-realm-users, relative-to=jboss.server.config.dir, levels=2, hash-hashCharset=KOI8-R, credential-store=mycredstore, secret-key=key)
 
             List<String> scriptLines = Arrays.asList(
-                String.format("/subsystem=elytron/secret-key-credential-store=%s:add(path=%s, create=true)", "mycredstore"+counter, fullOutputPath),
-                String.format("/subsystem=elytron/filesystem-realm=%s:add(path=%s, levels=2, hash-hashCharset=%s, hash-encoding=%s, credential-store=%s, secret-key=%s)", fileSystemRealmName, fullOutputPath, hashCharset.toString(), hashEncoding.toString(), "mycredstore"+counter, secretKeyAlias)
+                String.format("/subsystem=elytron/secret-key-credential-store=%s:add(path=%s, create=true)", "mycredstore"+counter, fullOutputPath+"/mycredstore.cs"),
+                String.format("/subsystem=elytron/filesystem-realm=%s:add(path=%s, levels=%s, hash-charset=%s, credential-store=%s, secret-key=%s)", fileSystemRealmName, fullOutputPath+'/'+fileSystemRealmName, levels, hashCharset.toString(), "mycredstore"+counter, secretKeyAlias)
             );
 
             if (!createScriptCheck.equals("y") && !createScriptCheck.equals("yes")) {
