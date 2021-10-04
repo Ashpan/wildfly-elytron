@@ -161,6 +161,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
     public FileSystemSecurityRealm(final Path root, final NameRewriter nameRewriter, final int levels, final boolean encoded) {
         this(root, nameRewriter, levels, encoded, Encoding.BASE64, StandardCharsets.UTF_8);
     }
+    
 
     /**
      * Construct a new instance.
