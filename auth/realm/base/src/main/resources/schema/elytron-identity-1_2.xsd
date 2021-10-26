@@ -28,11 +28,14 @@
     <!-- File-backed realm elements -->
 
     <xsd:element name="identity" type="identity-type"/>
+    <xsd:import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="https://www.w3.org/TR/2002/REC-xmldsig-core-20020212/xmldsig-core-schema.xsd" />
 
     <xsd:complexType name="identity-type">
         <xsd:all minOccurs="1" maxOccurs="1">
+            <xsd:element name="principal" type="name-type" minOccurs="1" maxOccurs="1"/>
             <xsd:element name="credentials" type="credentials-type" minOccurs="0" maxOccurs="1"/>
             <xsd:element name="attributes" type="attributes-type" minOccurs="0" maxOccurs="1"/>
+            <xsd:element name="Signature" />
         </xsd:all>
     </xsd:complexType>
 
@@ -143,5 +146,6 @@
             </xsd:element>
         </xsd:sequence>
     </xsd:complexType>
+
 
 </xsd:schema>

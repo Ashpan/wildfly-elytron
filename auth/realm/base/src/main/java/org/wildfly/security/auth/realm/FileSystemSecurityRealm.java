@@ -29,6 +29,7 @@ import static org.wildfly.security.provider.util.ProviderUtil.INSTALLED_PROVIDER
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -39,15 +40,20 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.AccessController;
 import java.security.GeneralSecurityException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
+import java.security.PrivateKey;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.security.Provider;
+import java.security.PublicKey;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -65,16 +71,45 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.crypto.SecretKey;
+import javax.xml.crypto.MarshalException;
+import javax.xml.crypto.dsig.CanonicalizationMethod;
+import javax.xml.crypto.dsig.DigestMethod;
+import javax.xml.crypto.dsig.Reference;
+import javax.xml.crypto.dsig.SignedInfo;
+import javax.xml.crypto.dsig.Transform;
+import javax.xml.crypto.dsig.XMLSignature;
+import javax.xml.crypto.dsig.XMLSignatureException;
+import javax.xml.crypto.dsig.XMLSignatureFactory;
+import javax.xml.crypto.dsig.dom.DOMSignContext;
+import javax.xml.crypto.dsig.dom.DOMValidateContext;
+import javax.xml.crypto.dsig.keyinfo.KeyInfo;
+import javax.xml.crypto.dsig.keyinfo.KeyInfoFactory;
+import javax.xml.crypto.dsig.keyinfo.KeyValue;
+import javax.xml.crypto.dsig.spec.C14NMethodParameterSpec;
+import javax.xml.crypto.dsig.spec.TransformParameterSpec;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamWriter;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.wildfly.common.Assert;
 import org.wildfly.common.bytes.ByteStringBuilder;
 import org.wildfly.common.codec.Base32Alphabet;
@@ -108,6 +143,7 @@ import org.wildfly.security.password.spec.OneTimePasswordSpec;
 import org.wildfly.security.password.spec.PasswordSpec;
 import org.wildfly.security.password.util.ModularCrypt;
 import org.wildfly.security.permission.ElytronPermission;
+import org.xml.sax.SAXException;
 
 /**
  * A simple filesystem-backed security realm.
@@ -125,7 +161,8 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
 
         VERSION_1_0("urn:elytron:1.0", null),
         VERSION_1_0_1("urn:elytron:1.0.1", VERSION_1_0),
-        VERSION_1_1("urn:elytron:identity:1.1", VERSION_1_0_1);
+        VERSION_1_1("urn:elytron:identity:1.1", VERSION_1_0_1),
+        VERSION_1_2("urn:elytron:identity:1.2", VERSION_1_1);
 
         final String namespace;
 
@@ -164,7 +201,8 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
     private final Charset hashCharset;
     private final Encoding hashEncoding;
     private final SecretKey secretKey;
-
+    private final PrivateKey privateKey;
+    private final PublicKey publicKey;
     private final ConcurrentHashMap<String, IdentitySharedExclusiveLock> realmIdentityLocks = new ConcurrentHashMap<>();
 
     /**
@@ -188,8 +226,11 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
      * @param hashEncoding the string format for the hashed passwords. Uses Base64 by default.
      * @param providers The providers supplier
      * @param secretKey the SecretKey used to encrypt and decrypt the security realm (if {@code null}, the security realm will be unencrypted)
+     * @param privateKey the PrivateKey used to verify the integrity of the security realm (if {@code null}, the security realm will not verify integrity)
+     * @param publicKey the PublicKey used to verify the integrity of the security realm (if {@code null}, the security realm will not verify integrity)
+     *
      */
-    public FileSystemSecurityRealm(final Path root, final NameRewriter nameRewriter, final int levels, final boolean encoded, final Encoding hashEncoding, final Charset hashCharset, final Supplier<Provider[]> providers, final SecretKey secretKey) {
+    public FileSystemSecurityRealm(final Path root, final NameRewriter nameRewriter, final int levels, final boolean encoded, final Encoding hashEncoding, final Charset hashCharset, final Supplier<Provider[]> providers, final SecretKey secretKey, final PrivateKey privateKey, final PublicKey publicKey) {
         final SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPermission(CREATE_SECURITY_REALM);
@@ -202,6 +243,26 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
         this.hashEncoding = hashEncoding != null ? hashEncoding : Encoding.BASE64;
         this.providers = providers != null ? providers : INSTALLED_PROVIDERS;
         this.secretKey = secretKey;
+        this.privateKey = privateKey;
+        this.publicKey = publicKey;
+
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * Construction with enabled security manager requires {@code createSecurityRealm} {@link ElytronPermission}.
+     *
+     * @param root the root path of the identity store
+     * @param nameRewriter the name rewriter to apply to looked up names
+     * @param levels the number of levels of directory hashing to apply
+     * @param encoded whether identity names should be BASE32 encoded before using as filename
+     * @param hashCharset the character set to use when converting password strings to a byte array. Uses UTF-8 by default.
+     * @param hashEncoding the string format for the hashed passwords. Uses Base64 by default.
+     * @param secretKey the SecretKey used to encrypt and decrypt the security realm (if {@code null}, the security realm will be unencrypted)
+     */
+    public FileSystemSecurityRealm(final Path root, final NameRewriter nameRewriter, final int levels, final boolean encoded, final Encoding hashEncoding, final Charset hashCharset, final SecretKey secretKey) {
+        this(root, nameRewriter, levels, encoded, hashEncoding, hashCharset, INSTALLED_PROVIDERS, secretKey, null, null);
     }
 
     /**
@@ -217,7 +278,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
      * @param hashEncoding the string format for the hashed passwords. Uses Base64 by default.
      */
     public FileSystemSecurityRealm(final Path root, final NameRewriter nameRewriter, final int levels, final boolean encoded, final Encoding hashEncoding, final Charset hashCharset) {
-        this(root, nameRewriter, levels, encoded, hashEncoding, hashCharset, INSTALLED_PROVIDERS, null);
+        this(root, nameRewriter, levels, encoded, hashEncoding, hashCharset, INSTALLED_PROVIDERS, null, null, null);
     }
 
     /**
@@ -231,7 +292,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
      * @param encoded whether identity names should by BASE32 encoded before using as filename
      */
     public FileSystemSecurityRealm(final Path root, final NameRewriter nameRewriter, final int levels, final boolean encoded) {
-        this(root, nameRewriter, levels, encoded, Encoding.BASE64, StandardCharsets.UTF_8, INSTALLED_PROVIDERS, null);
+        this(root, nameRewriter, levels, encoded, Encoding.BASE64, StandardCharsets.UTF_8, INSTALLED_PROVIDERS, null, null, null);
     }
 
     /**
@@ -255,7 +316,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
      * @param hashCharset the character set to use when converting password strings to a byte array. Uses UTF-8 by default and must not be {@code null}.
      */
     public FileSystemSecurityRealm(final Path root, final NameRewriter nameRewriter, final int levels, final Encoding hashEncoding, final Charset hashCharset) {
-        this(root, nameRewriter, levels, true, hashEncoding, hashCharset, INSTALLED_PROVIDERS, null);
+        this(root, nameRewriter, levels, true, hashEncoding, hashCharset, INSTALLED_PROVIDERS, null, null, null);
     }
 
 
@@ -280,7 +341,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
      * @param hashCharset the character set to use when converting password strings to a byte array. Uses UTF-8 by default and must not be {@code null}.
      */
     public FileSystemSecurityRealm(final Path root, final int levels, final Encoding hashEncoding, final Charset hashCharset) {
-        this(root, NameRewriter.IDENTITY_REWRITER, levels, true, hashEncoding, hashCharset, INSTALLED_PROVIDERS, null);
+        this(root, NameRewriter.IDENTITY_REWRITER, levels, true, hashEncoding, hashCharset, INSTALLED_PROVIDERS, null, null, null);
     }
 
     /**
@@ -300,13 +361,16 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
      * @param hashCharset the character set to use when converting password strings to a byte array. Uses UTF-8 by default and must not be {@code null}
      */
     public FileSystemSecurityRealm(final Path root, final Encoding hashEncoding, final Charset hashCharset) {
-        this(root, NameRewriter.IDENTITY_REWRITER, 2, true, hashEncoding, hashCharset, INSTALLED_PROVIDERS, null);
+        this(root, NameRewriter.IDENTITY_REWRITER, 2, true, hashEncoding, hashCharset, INSTALLED_PROVIDERS, null, null, null);
     }
 
     public FileSystemSecurityRealm(Path root, int levels, Supplier<Provider[]> providers) {
-        this(root, NameRewriter.IDENTITY_REWRITER, levels, true, Encoding.BASE64, StandardCharsets.UTF_8, providers, null);
+        this(root, NameRewriter.IDENTITY_REWRITER, levels, true, Encoding.BASE64, StandardCharsets.UTF_8, providers, null, null, null);
     }
 
+    public boolean hasIntegrityEnabled() {
+        return privateKey != null && publicKey != null;
+    }
     private Path pathFor(String name) {
         assert name.codePointCount(0, name.length()) > 0;
         String normalizedName = name;
@@ -385,7 +449,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
         } else {
             lock = realmIdentityLock.lockShared();
         }
-        return new Identity(finalName, pathFor(finalName), lock, hashCharset, hashEncoding, providers, secretKey);
+        return new Identity(finalName, pathFor(finalName), lock, hashCharset, hashEncoding, providers, secretKey, privateKey, publicKey, hasIntegrityEnabled());
     }
 
     public ModifiableRealmIdentityIterator getRealmIdentityIterator() throws RealmUnavailableException {
@@ -512,6 +576,50 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
         void parseCredential(String algorithm, String format, String body) throws RealmUnavailableException, XMLStreamException;
     }
 
+    /**
+     * Re-generate the signatures for all the identities in this realm.
+     * This method is intended to be called after updating the key pair used by this realm.
+     *
+     * @throws RealmUnavailableException Thrown if unable to obtain the realm identity iterator or dispose and close the realm
+     */
+    public void updateRealmKeyPair() throws RealmUnavailableException {
+        if (! hasIntegrityEnabled()) {
+            throw ElytronMessages.log.integrityNotEnabled(root.toString());
+        }
+        ModifiableRealmIdentityIterator realmIterator = this.getRealmIdentityIterator();
+        while (realmIterator.hasNext()) {
+            Identity identity = (Identity) realmIterator.next();
+            try{
+                identity.writeDigitalSignature(String.valueOf(identity.path), identity.name);
+            } finally {
+                identity.dispose();
+            }
+        }
+        realmIterator.close();
+    }
+
+    /**
+     * Verify the integrity of each identity file in this realm.
+     * @return {@code true} if the integrity of all the identity files in the realm is successfully verified and {@code false} otherwise
+     *
+     */
+    public boolean verifyRealmIntegrity() throws RealmUnavailableException {
+        if (! hasIntegrityEnabled()) {
+            throw ElytronMessages.log.integrityNotEnabled(root.toString());
+        }
+        ModifiableRealmIdentityIterator realmIterator = this.getRealmIdentityIterator();
+        while (realmIterator.hasNext()) {
+            Identity identity = (Identity) realmIterator.next();
+            if(! identity.verifyIntegrity()) {
+                identity.dispose();
+                return false;
+            }
+            identity.dispose();
+        }
+        realmIterator.close();
+        return true;
+    }
+
     static class Identity implements ModifiableRealmIdentity {
 
         private static final String ENCRYPTION_FORMAT = "enc_base64";
@@ -522,13 +630,16 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
 
         private final String name;
         private final Path path;
-        private Supplier<Provider[]> providers;
+        private final Supplier<Provider[]> providers;
         private IdentityLock lock;
         private final Charset hashCharset;
         private final Encoding hashEncoding;
         private final SecretKey secretKey;
+        private final PrivateKey privateKey;
+        private final PublicKey publicKey;
+        private final boolean integrityEnabled;
 
-        Identity(final String name, final Path path, final IdentityLock lock, final Charset hashCharset, final Encoding hashEncoding, Supplier<Provider[]> providers, final SecretKey secretKey) {
+        Identity(final String name, final Path path, final IdentityLock lock, final Charset hashCharset, final Encoding hashEncoding, Supplier<Provider[]> providers, final SecretKey secretKey, final PrivateKey privateKey, final PublicKey publicKey, final boolean integrityEnabled) {
             this.name = name;
             this.path = path;
             this.lock = lock;
@@ -536,6 +647,9 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
             this.hashEncoding = hashEncoding;
             this.providers = providers;
             this.secretKey = secretKey;
+            this.privateKey = privateKey;
+            this.publicKey = publicKey;
+            this.integrityEnabled = integrityEnabled;
         }
 
         public Principal getRealmIdentityPrincipal() {
@@ -589,12 +703,25 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
             Assert.checkNotNullParam("evidence", evidence);
 
             if (ElytronMessages.log.isTraceEnabled()) {
-                final LoadedIdentity loadedIdentity = loadIdentity(false, true);
-                ElytronMessages.log.tracef("Trying to authenticate identity %s using FileSystemSecurityRealm",
-                        (loadedIdentity != null) ? loadedIdentity.getName() : "null");
+                try {
+                    final LoadedIdentity loadedIdentity = loadIdentity(false, true);
+                    ElytronMessages.log.tracef("Trying to authenticate identity %s using FileSystemSecurityRealm", (loadedIdentity != null) ? loadedIdentity.getName() : "null");
+                } catch (RealmUnavailableException e) {
+                    if (e.getCause() instanceof IntegrityException) {
+                        return false;
+                    }
+                    throw e;
+                }
             }
-
-            List<Credential> credentials = loadCredentials();
+            List<Credential> credentials = null;
+            try {
+                credentials = loadCredentials();
+            } catch (RealmUnavailableException e) {
+                if (e.getCause() instanceof IntegrityException) {
+                    return false;
+                }
+                throw e;
+            }
             ElytronMessages.log.tracef("FileSystemSecurityRealm - verification evidence [%s] against [%d] credentials...", evidence, credentials.size());
             for (Credential credential : credentials) {
                 if (credential.canVerify(evidence)) {
@@ -694,15 +821,30 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                 final XMLOutputFactory xmlOutputFactory = XMLOutputFactory.newFactory();
                 try (OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(tempPath, WRITE, CREATE_NEW, DSYNC))) {
                     try (AutoCloseableXMLStreamWriterHolder holder = new AutoCloseableXMLStreamWriterHolder(xmlOutputFactory.createXMLStreamWriter(outputStream))) {
+                        String namespace = "";
+                        if (integrityEnabled) {
+                            namespace = Version.VERSION_1_2.getNamespace();
+                        } else if (secretKey != null) {
+                            namespace = Version.VERSION_1_1.getNamespace();
+                        } else {
+                            namespace = Version.VERSION_1_0.getNamespace();
+                        }
                         final XMLStreamWriter streamWriter = holder.getXmlStreamWriter();
                         // create empty identity
                         streamWriter.writeStartDocument();
                         streamWriter.writeCharacters("\n");
                         streamWriter.writeStartElement("identity");
-                        streamWriter.writeDefaultNamespace(secretKey != null ? Version.VERSION_1_1.getNamespace() : Version.VERSION_1_0.getNamespace());
+                        streamWriter.writeDefaultNamespace(namespace);
+                        if (integrityEnabled) {
+                            streamWriter.writeCharacters("\n    ");
+                            streamWriter.writeStartElement("principal");
+                            streamWriter.writeAttribute("name", secretKey != null ? CipherUtil.encrypt(name, secretKey) : name);
+                            streamWriter.writeEndElement();
+                            streamWriter.writeCharacters("\n    ");
+                        }
                         streamWriter.writeEndElement();
                         streamWriter.writeEndDocument();
-                    } catch (XMLStreamException e) {
+                    } catch (XMLStreamException | GeneralSecurityException e) {
                         throw ElytronMessages.log.fileSystemRealmFailedToWrite(tempPath, name, e);
                     }
                 } catch (FileAlreadyExistsException ignored) {
@@ -727,6 +869,13 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                     Files.delete(tempPath);
                 } catch (IOException ignored) {
                     // nothing we can do
+                }
+                if(integrityEnabled) {
+                    try {
+                        writeDigitalSignature(path.toString(), this.name);
+                    } catch (RealmUnavailableException e) {
+                        throw ElytronMessages.log.unableToGenerateSignature(path.toString());
+                    }
                 }
                 return null;
             }
@@ -778,6 +927,9 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
         }
 
         private Void replaceIdentityPrivileged(final LoadedIdentity newIdentity) throws RealmUnavailableException {
+            if (!verifyIntegrity()) {
+                throw new RealmUnavailableException(ElytronMessages.log.invalidIdentitySignature(name));
+            }
             for (;;) {
                 final Path tempPath = tempPath();
                 try {
@@ -823,6 +975,14 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                     } catch (IOException ignored) {
                         // nothing we can do
                     }
+
+                    if (integrityEnabled) {
+                        try {
+                            writeDigitalSignature(path.toString(), name);
+                        } catch (RealmUnavailableException e) {
+                            throw ElytronMessages.log.unableToGenerateSignature(path.toString());
+                        }
+                    }
                     return null;
                 } catch (Throwable t) {
                     try {
@@ -840,21 +1000,27 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
             // if new functionality is used then use the required schema version otherwise fallback
             // to an older version.
 
-            if (secretKey != null) {
+            if (integrityEnabled) {
+                return Version.VERSION_1_2;
+            } else if (secretKey != null) {
                 return Version.VERSION_1_1;
+            } else {
+                return Version.VERSION_1_0;
             }
-            // We would not require 1.0.1 as no realm specific changed were made.
-            //return Version.VERSION_1_0_1;
-
-            return Version.VERSION_1_0;
         }
 
         private void writeIdentity(final XMLStreamWriter streamWriter, final LoadedIdentity newIdentity) throws XMLStreamException, InvalidKeySpecException, NoSuchAlgorithmException, GeneralSecurityException {
             streamWriter.writeStartDocument();
             streamWriter.writeCharacters("\n");
             streamWriter.writeStartElement("identity");
-
             streamWriter.writeDefaultNamespace(requiredVersion(newIdentity).getNamespace());
+
+            if (integrityEnabled) {
+                streamWriter.writeCharacters("\n    ");
+                streamWriter.writeStartElement("principal");
+                streamWriter.writeAttribute("name", secretKey != null ? CipherUtil.encrypt(name, secretKey) : name);
+                streamWriter.writeEndElement();
+            }
 
             if (newIdentity.getCredentials().size() > 0) {
                 streamWriter.writeCharacters("\n    ");
@@ -921,7 +1087,9 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                 } while (entryIter.hasNext());
                 streamWriter.writeCharacters("\n    ");
                 streamWriter.writeEndElement();
+                streamWriter.writeCharacters("\n");
             }
+            streamWriter.writeCharacters("\n    ");
             streamWriter.writeEndElement();
             streamWriter.writeEndDocument();
         }
@@ -955,6 +1123,9 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
         }
 
         protected LoadedIdentity loadIdentityPrivileged(final boolean skipCredentials, final boolean skipAttributes) throws RealmUnavailableException {
+            if (!verifyIntegrity()) {
+                throw new RealmUnavailableException(ElytronMessages.log.invalidIdentitySignature(name));
+            }
             try (InputStream inputStream = Files.newInputStream(path, READ)) {
                 final XMLInputFactory inputFactory = XMLInputFactory.newFactory();
                 inputFactory.setProperty(XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
@@ -999,16 +1170,21 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
             for (;;) {
                 if (streamReader.isEndElement()) {
                     if (attributes == Attributes.EMPTY && !skipAttributes) {
-                        //Since this could be a use-case wanting to modify the attributes, make sure that we have a
-                        //modifiable version of Attributes;
+                        // Since this could be a use-case wanting to modify the attributes, make sure that we have a
+                        // modifiable version of Attributes;
                         attributes = new MapAttributes();
                     }
                     return new LoadedIdentity(name, credentials, attributes, hashEncoding);
                 }
-                if (! version.getNamespace().equals(streamReader.getNamespaceURI())) {
+                if (!(version.getNamespace().equals(streamReader.getNamespaceURI())) && !(XMLSignature.XMLNS.equals(streamReader.getNamespaceURI()))) {
                     // Mixed versions unsupported.
                     throw ElytronMessages.log.fileSystemRealmInvalidContent(path, streamReader.getLocation().getLineNumber(), name);
                 }
+
+                if (version.isAtLeast(Version.VERSION_1_2) && "principal".equals(streamReader.getLocalName())) {
+                    consumeContent(streamReader);
+                }
+
                 if (! gotCredentials && "credentials".equals(streamReader.getLocalName())) {
                     gotCredentials = true;
                     if (skipCredentials) {
@@ -1294,6 +1470,128 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
             }
         }
 
+        private boolean verifyIntegrity() {
+            if (this.publicKey != null) {
+                return (validatePrincipalName(path.toString(), name) && validateDigitalSignature(path.toString(), name));
+            }
+            return true;
+        }
+
+        // Process for updating identity:
+        // 1. Validate current identity digital signature
+        // 2. Update identity with new data
+        // 3. Create new digital signature
+        private boolean validateDigitalSignature(String path, String name) {
+            try {
+                DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+                dbf.setNamespaceAware(true);
+                Document doc = dbf.newDocumentBuilder().parse(path);
+                NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
+                if (nl.getLength() == 0) {
+                    throw ElytronMessages.log.cannotFindSignature(path);
+                }
+                XMLSignatureFactory fac = XMLSignatureFactory.getInstance("DOM");
+                DOMValidateContext valContext = new DOMValidateContext(publicKey, nl.item(0));
+                XMLSignature signature = fac.unmarshalXMLSignature(valContext);
+                boolean coreValidity = signature.validate(valContext);
+                ElytronMessages.log.tracef("FileSystemSecurityRealm - verification against signature for credential [%s] = %b", name, coreValidity);
+                return coreValidity;
+           } catch (ParserConfigurationException | IOException | MarshalException | XMLSignatureException | SAXException e) {
+                ElytronMessages.log.tracef("FileSystemSecurityRealm - Error during verification. Signature for credential [%s] failed", name);
+                return false;
+            }
+        }
+
+        private boolean validatePrincipalName(String path, String name) {
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            dbf.setNamespaceAware(true);
+            Document doc;
+            try {
+                doc = dbf.newDocumentBuilder().parse(path);
+            } catch (SAXException | IOException | ParserConfigurationException e) {
+                return false;
+            }
+            NodeList nl = doc.getElementsByTagName("principal");
+            if (nl.getLength() == 0) {
+                ElytronMessages.log.tracef("FileSystemSecurityRealm - verification against principal for credential [%s] = %b", name, false);
+                return false;
+            }
+            String principalName = nl.item(0).getAttributes().getNamedItem("name").getNodeValue();
+            if (secretKey != null) {
+                try {
+                    principalName = CipherUtil.decrypt(principalName, secretKey);
+                } catch (GeneralSecurityException e) {
+                    ElytronMessages.log.tracef("FileSystemSecurityRealm - verification against principal for credential [%s] = %b", name, false);
+                    return false;
+                }
+            }
+            boolean validity = Objects.equals(principalName, name);
+            ElytronMessages.log.tracef("FileSystemSecurityRealm - verification against principal for credential [%s] = %b", name, validity);
+            return validity;
+        }
+
+        private void writeDigitalSignature(String path, String name) throws RealmUnavailableException {
+            try {
+                DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+                dbf.setNamespaceAware(true);
+                DocumentBuilder builder = dbf.newDocumentBuilder();
+                Document doc = builder.parse(Files.newInputStream(Paths.get(path)));
+                Element elem = doc.getDocumentElement();
+                NodeList signatureNode = doc.getElementsByTagName("Signature");
+                if (signatureNode.getLength() > 0) {
+                    Node sig = signatureNode.item(0);
+                    elem.removeChild(sig);
+                }
+                DOMSignContext dsc = new DOMSignContext(this.privateKey, elem);
+                XMLSignatureFactory fac = XMLSignatureFactory.getInstance("DOM");
+                Reference ref = fac.newReference
+                        ("", fac.newDigestMethod(DigestMethod.SHA256, null),
+                                Collections.singletonList
+                                        (fac.newTransform(Transform.ENVELOPED,
+                                                (TransformParameterSpec) null)), null, null);
+                String signatureMethod = "";
+                // https://issues.redhat.com/browse/ELY-2346
+                // Once JDK 8 support is removed use the javax.xml.crypto.dsig.SignatureMethod to set these signatureMethods
+                switch (this.publicKey.getAlgorithm()) {
+                    case "DSA":
+                        signatureMethod = "http://www.w3.org/2009/xmldsig11#dsa-sha256";
+                        break;
+                    case "RSA":
+                        signatureMethod = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
+                        break;
+                    case "HMAC":
+                        signatureMethod = "http://www.w3.org/2001/04/xmldsig-more#hmac-sha256";
+                        break;
+                    case "EC":
+                        signatureMethod = "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256";
+                        break;
+                }
+                SignedInfo si = fac.newSignedInfo
+                        (fac.newCanonicalizationMethod
+                                        (CanonicalizationMethod.INCLUSIVE,
+                                                (C14NMethodParameterSpec) null),
+                                fac.newSignatureMethod(signatureMethod, null),
+                                Collections.singletonList(ref));
+                KeyInfoFactory kif = fac.getKeyInfoFactory();
+                KeyValue kv = kif.newKeyValue(this.publicKey);
+                KeyInfo ki = kif.newKeyInfo(Collections.singletonList(kv));
+                XMLSignature signature = fac.newXMLSignature(si, ki);
+                signature.sign(dsc);
+                TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                Transformer transformer = transformerFactory.newTransformer();
+                DOMSource source = new DOMSource(doc);
+                FileWriter writer = new FileWriter(path);
+                StreamResult result = new StreamResult(writer);
+                transformer.transform(source, result);
+                ElytronMessages.log.tracef("FileSystemSecurityRealm - signature against file updated [%s]", name);
+                writer.close();
+
+            } catch (ParserConfigurationException | IOException | NoSuchAlgorithmException | InvalidAlgorithmParameterException |
+                    KeyException | XMLSignatureException | MarshalException | TransformerException | SAXException e) {
+                ElytronMessages.log.tracef("FileSystemSecurityRealm - Error during signature generation against identity [%s]", name);
+                throw ElytronMessages.log.unableToGenerateSignature(path);
+            }
+        }
     }
 
     protected static final class LoadedIdentity {
