@@ -152,4 +152,11 @@ interface ElytronMessages extends BasicLogger {
 
     @Message(id = 13006, value = "Filesystem-backed realm unable to encrypt identity.")
     RealmUnavailableException fileSystemRealmEncryptionFailed(@Cause Throwable cause);
+    
+    @Message(id = 13007, value = "Signature for the following identity is invalid: %s.")
+    IllegalStateException invalidIdentitySignature(String s);
+
+    @Message(id = 13008, value = "Unable to create a signature for the file: %s.")
+    IllegalStateException unableToGenerateSignature(String s);
+
 }
