@@ -17,25 +17,57 @@
  */
 package org.wildfly.security.auth;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.wildfly.security.password.interfaces.BCryptPassword.BCRYPT_SALT_SIZE;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.Provider;
+import java.security.PublicKey;
+import java.security.Security;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+import javax.crypto.SecretKey;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.wildfly.common.iteration.CodePointIterator;
-import org.wildfly.security.auth.server.RealmUnavailableException;
-import org.wildfly.security.password.WildFlyElytronPasswordProvider;
 import org.wildfly.security.auth.principal.NamePrincipal;
 import org.wildfly.security.auth.realm.FileSystemSecurityRealm;
-import org.wildfly.security.auth.server.ModifiableRealmIdentityIterator;
 import org.wildfly.security.auth.server.ModifiableRealmIdentity;
+import org.wildfly.security.auth.server.ModifiableRealmIdentityIterator;
+import org.wildfly.security.auth.server.RealmUnavailableException;
 import org.wildfly.security.authz.Attributes;
 import org.wildfly.security.authz.AuthorizationIdentity;
 import org.wildfly.security.authz.MapAttributes;
 import org.wildfly.security.credential.Credential;
 import org.wildfly.security.credential.PasswordCredential;
+import org.wildfly.security.encryption.SecretKeyUtil;
 import org.wildfly.security.evidence.PasswordGuessEvidence;
 import org.wildfly.security.password.Password;
 import org.wildfly.security.password.PasswordFactory;
+import org.wildfly.security.password.WildFlyElytronPasswordProvider;
 import org.wildfly.security.password.interfaces.BCryptPassword;
 import org.wildfly.security.password.interfaces.ClearPassword;
 import org.wildfly.security.password.interfaces.DigestPassword;
@@ -50,36 +82,6 @@ import org.wildfly.security.password.spec.EncryptablePasswordSpec;
 import org.wildfly.security.password.spec.IteratedSaltedPasswordAlgorithmSpec;
 import org.wildfly.security.password.spec.OneTimePasswordSpec;
 import org.wildfly.security.password.spec.SaltedPasswordAlgorithmSpec;
-import org.wildfly.security.encryption.SecretKeyUtil;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.security.GeneralSecurityException;
-import java.security.Provider;
-import java.security.Security;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertNotNull;
-import static org.wildfly.security.password.interfaces.BCryptPassword.BCRYPT_SALT_SIZE;
-
-import javax.crypto.SecretKey;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -89,6 +91,10 @@ public class FileSystemSecurityRealmTest {
 
     private static final Provider provider = WildFlyElytronPasswordProvider.getInstance();
     SecretKey key = SecretKeyUtil.generateSecretKey(128);
+    KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("RSA");
+    KeyPair pair = keyPairGen.generateKeyPair();
+    PrivateKey privateKey = pair.getPrivate();
+    PublicKey publicKey = pair.getPublic();
 
     public FileSystemSecurityRealmTest() throws GeneralSecurityException {
     }
@@ -120,6 +126,21 @@ public class FileSystemSecurityRealmTest {
     @Test
     public void testCreateIdentityWithLevels() throws Exception {
         FileSystemSecurityRealm securityRealm = new FileSystemSecurityRealm(getRootPath(), 3);
+        ModifiableRealmIdentity identity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
+
+        identity.create();
+
+        assertTrue(identity.exists());
+        identity.dispose();
+    }
+
+    @Test
+    public void testCreateIdentityIntegrity() throws Exception {
+        FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
+                .setRoot(getRootPath())
+                .setPrivateKey(privateKey)
+                .setPublicKey(publicKey)
+                .build();
         ModifiableRealmIdentity identity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
 
         identity.create();

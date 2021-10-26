@@ -27,7 +27,9 @@ import static javax.xml.stream.XMLStreamConstants.START_ELEMENT;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -40,12 +42,17 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
+import java.security.PrivateKey;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -63,29 +70,52 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
-
 import javax.crypto.SecretKey;
+import javax.xml.crypto.dsig.CanonicalizationMethod;
+import javax.xml.crypto.dsig.DigestMethod;
+import javax.xml.crypto.dsig.Reference;
+import javax.xml.crypto.dsig.SignatureMethod;
+import javax.xml.crypto.dsig.SignedInfo;
+import javax.xml.crypto.dsig.Transform;
+import javax.xml.crypto.dsig.XMLSignature;
+import javax.xml.crypto.dsig.XMLSignatureFactory;
+import javax.xml.crypto.dsig.dom.DOMSignContext;
+import javax.xml.crypto.dsig.dom.DOMValidateContext;
+import javax.xml.crypto.dsig.keyinfo.KeyInfo;
+import javax.xml.crypto.dsig.keyinfo.KeyInfoFactory;
+import javax.xml.crypto.dsig.keyinfo.KeyValue;
+import javax.xml.crypto.dsig.spec.C14NMethodParameterSpec;
+import javax.xml.crypto.dsig.spec.TransformParameterSpec;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamWriter;
-
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.wildfly.common.Assert;
 import org.wildfly.common.bytes.ByteStringBuilder;
 import org.wildfly.common.codec.Base32Alphabet;
 import org.wildfly.common.codec.Base64Alphabet;
 import org.wildfly.common.iteration.ByteIterator;
 import org.wildfly.common.iteration.CodePointIterator;
+import org.wildfly.security.auth.SupportLevel;
 import org.wildfly.security.auth.principal.NamePrincipal;
 import org.wildfly.security.auth.realm.IdentitySharedExclusiveLock.IdentityLock;
-import org.wildfly.security.auth.server.ModifiableRealmIdentityIterator;
 import org.wildfly.security.auth.server.ModifiableRealmIdentity;
+import org.wildfly.security.auth.server.ModifiableRealmIdentityIterator;
 import org.wildfly.security.auth.server.ModifiableSecurityRealm;
 import org.wildfly.security.auth.server.NameRewriter;
 import org.wildfly.security.auth.server.RealmIdentity;
 import org.wildfly.security.auth.server.RealmUnavailableException;
-import org.wildfly.security.auth.SupportLevel;
 import org.wildfly.security.authz.Attributes;
 import org.wildfly.security.authz.AuthorizationIdentity;
 import org.wildfly.security.authz.MapAttributes;
@@ -123,6 +153,8 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
     private final Charset hashCharset;
     private final Encoding hashEncoding;
     private final SecretKey secretKey;
+    private final PrivateKey privateKey;
+    private final PublicKey publicKey;
 
     private final ConcurrentHashMap<String, IdentitySharedExclusiveLock> realmIdentityLocks = new ConcurrentHashMap<>();
 
@@ -147,7 +179,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
      * @param hashEncoding the string format for the hashed passwords. Uses Base64 by default.
      * @param secretKey the SecretKey used to encrypt and decrypt the security realm (if {@code null}, the security realm will be unencrypted)
      */
-    public FileSystemSecurityRealm(final Path root, final NameRewriter nameRewriter, final int levels, final boolean encoded, final Encoding hashEncoding, final Charset hashCharset, final SecretKey secretKey) {
+    public FileSystemSecurityRealm(final Path root, final NameRewriter nameRewriter, final int levels, final boolean encoded, final Encoding hashEncoding, final Charset hashCharset, final SecretKey secretKey, final PrivateKey privateKey, final PublicKey publicKey) {
         final SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             sm.checkPermission(CREATE_SECURITY_REALM);
@@ -159,6 +191,9 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
         this.hashCharset = hashCharset != null ? hashCharset : StandardCharsets.UTF_8;
         this.hashEncoding = hashEncoding != null ? hashEncoding : Encoding.BASE64;
         this.secretKey = secretKey;
+        this.privateKey = publicKey != null ? privateKey : null;
+        this.publicKey = privateKey != null ? publicKey : null;
+        // last 2 lines are to make sure both private key and public key have values, if not then both are set to null
     }
 
     /**
@@ -172,7 +207,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
      * @param encoded whether identity names should by BASE32 encoded before using as filename
      */
     public FileSystemSecurityRealm(final Path root, final NameRewriter nameRewriter, final int levels, final boolean encoded) {
-        this(root, nameRewriter, levels, encoded, Encoding.BASE64, StandardCharsets.UTF_8, null);
+        this(root, nameRewriter, levels, encoded, Encoding.BASE64, StandardCharsets.UTF_8, null, null, null);
     }
 
     /**
@@ -196,7 +231,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
      * @param hashCharset the character set to use when converting password strings to a byte array. Uses UTF-8 by default and must not be {@code null}.
      */
     public FileSystemSecurityRealm(final Path root, final NameRewriter nameRewriter, final int levels, final Encoding hashEncoding, final Charset hashCharset) {
-        this(root, nameRewriter, levels, true, hashEncoding, hashCharset, null);
+        this(root, nameRewriter, levels, true, hashEncoding, hashCharset, null, null, null);
     }
 
     /**
@@ -218,7 +253,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
      * @param hashCharset the character set to use when converting password strings to a byte array. Uses UTF-8 by default and must not be {@code null}.
      */
     public FileSystemSecurityRealm(final Path root, final int levels, final Encoding hashEncoding, final Charset hashCharset) {
-        this(root, NameRewriter.IDENTITY_REWRITER, levels, true, hashEncoding, hashCharset, null);
+        this(root, NameRewriter.IDENTITY_REWRITER, levels, true, hashEncoding, hashCharset, null, null, null);
     }
 
     /**
@@ -238,7 +273,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
      * @param hashCharset the character set to use when converting password strings to a byte array. Uses UTF-8 by default and must not be {@code null}
      */
     public FileSystemSecurityRealm(final Path root, final Encoding hashEncoding, final Charset hashCharset) {
-        this(root, NameRewriter.IDENTITY_REWRITER, 2, true, hashEncoding, hashCharset, null);
+        this(root, NameRewriter.IDENTITY_REWRITER, 2, true, hashEncoding, hashCharset, null, null, null);
     }
 
     private Path pathFor(String name) {
@@ -320,7 +355,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
             lock = realmIdentityLock.lockShared();
         }
 
-        return new Identity(finalName, pathFor(finalName), lock, hashCharset, hashEncoding, secretKey);
+        return new Identity(finalName, pathFor(finalName), lock, hashCharset, hashEncoding, secretKey, privateKey, publicKey);
 
     }
 
@@ -462,14 +497,18 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
         private final Charset hashCharset;
         private final Encoding hashEncoding;
         private final SecretKey secretKey;
+        private final PrivateKey privateKey;
+        private final PublicKey publicKey;
 
-        Identity(final String name, final Path path, final IdentityLock lock, final Charset hashCharset, final Encoding hashEncoding, final SecretKey secretKey) {
+        Identity(final String name, final Path path, final IdentityLock lock, final Charset hashCharset, final Encoding hashEncoding, final SecretKey secretKey, final PrivateKey privateKey, final PublicKey publicKey) {
             this.name = name;
             this.path = path;
             this.lock = lock;
             this.hashCharset = hashCharset;
             this.hashEncoding = hashEncoding;
             this.secretKey = secretKey;
+            this.privateKey = privateKey;
+            this.publicKey = publicKey;
         }
 
         public Principal getRealmIdentityPrincipal() {
@@ -610,6 +649,14 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
         public void create() throws RealmUnavailableException {
             if (System.getSecurityManager() == null) {
                 createPrivileged();
+                if(privateKey != null) {
+                    try {
+                        createDigitalSignature(path.toString());
+                    } catch (Exception e) {
+                        System.out.println("Error");
+                    }
+                    System.out.println(validateDigitalSignature(path.toString()));
+                }
                 return;
             }
             try {
@@ -620,6 +667,111 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                 }
                 throw new RuntimeException(e.getException());
             }
+        }
+
+        private boolean validateDigitalSignature(String path) {
+            try {
+                DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+                dbf.setNamespaceAware(true);
+                Document doc = dbf.newDocumentBuilder().parse(path);
+                NodeList nl = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
+                if (nl.getLength() == 0) {
+                    throw new Exception("Cannot find Signature element");
+                }
+                XMLSignatureFactory fac = XMLSignatureFactory.getInstance("DOM");
+                DOMValidateContext valContext = new DOMValidateContext(publicKey, nl.item(0));
+                XMLSignature signature = fac.unmarshalXMLSignature(valContext);
+                boolean coreValidity = signature.validate(valContext);
+                if (!coreValidity) {
+                    System.err.println("Signature failed core validation");
+                    boolean sv = signature.getSignatureValue().validate(valContext);
+                    System.out.println("signature validation status: " + sv);
+                    // check the validation status of each Reference
+                    Iterator i = signature.getSignedInfo().getReferences().iterator();
+                    for (int j = 0; i.hasNext(); j++) {
+                        boolean refValid = ((Reference)i.next()).validate(valContext);
+                        System.out.println("ref[" + j + "] validity status: " + refValid);
+                    }
+                    return false;
+                } else {
+                    System.out.println("Signature passed core validation");
+                    return true;
+                }
+            } catch (Exception e) {
+                System.out.println("Error");
+                return false;
+            }
+        }
+
+        private void createDigitalSignature(String path) throws RealmUnavailableException {
+            try {
+                DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+                dbf.setNamespaceAware(true);
+                DocumentBuilder builder = dbf.newDocumentBuilder();
+                Document doc = builder.parse(new FileInputStream(path));
+                Element elem = doc.getDocumentElement();
+                NodeList signatureNode = doc.getElementsByTagName("Signature");
+                if(signatureNode.getLength() > 0) {
+                    Node sig = signatureNode.item(0);
+                    elem.removeChild(sig);
+                }
+                DOMSignContext dsc = new DOMSignContext (this.privateKey, elem);
+                XMLSignatureFactory fac = XMLSignatureFactory.getInstance("DOM");
+                Reference ref = fac.newReference
+                        ("", fac.newDigestMethod(DigestMethod.SHA256, null),
+                                Collections.singletonList
+                                        (fac.newTransform(Transform.ENVELOPED,
+                                                (TransformParameterSpec) null)), null, null);
+                String signatureMethod = "";
+                if(publicKey.getAlgorithm().equals("DSA")) {
+                    signatureMethod = SignatureMethod.DSA_SHA1;
+                } else if(publicKey.getAlgorithm().equals("RSA")) {
+                    signatureMethod = SignatureMethod.RSA_SHA1;
+                } else if(publicKey.getAlgorithm().equals("HMAC")) {
+                    signatureMethod = SignatureMethod.HMAC_SHA1;
+                } else if(publicKey.getAlgorithm().equals("EC")) {
+                    signatureMethod = SignatureMethod.ECDSA_SHA1;
+                }
+                SignedInfo si = fac.newSignedInfo
+                        (fac.newCanonicalizationMethod
+                                        (CanonicalizationMethod.INCLUSIVE,
+                                                (C14NMethodParameterSpec) null),
+                                fac.newSignatureMethod(signatureMethod, null),
+                                Collections.singletonList(ref));
+                KeyInfoFactory kif = fac.getKeyInfoFactory();
+                KeyValue kv = kif.newKeyValue(this.publicKey);
+                KeyInfo ki = kif.newKeyInfo(Collections.singletonList(kv));
+                XMLSignature signature = fac.newXMLSignature(si, ki);
+                signature.sign(dsc);
+                TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                Transformer transformer = transformerFactory.newTransformer();
+                DOMSource source = new DOMSource(doc);
+                FileWriter writer = new FileWriter(path);
+                StreamResult result = new StreamResult(writer);
+                transformer.transform(source, result);
+
+            } catch (Exception e) {
+                System.out.println("Error");
+            }
+        }
+
+        private boolean verifyDigitalSignature(Path path, byte[] receivedSignature) throws RealmUnavailableException {
+            try{
+                Signature signature = Signature.getInstance("SHA256withRSA");
+                signature.initVerify(this.publicKey);
+                byte[] messageBytes = Files.readAllBytes(path);
+                signature.update(messageBytes);
+                return signature.verify(receivedSignature);
+            } catch (IOException e) {
+                throw ElytronMessages.log.fileSystemRealmFailedToOpen(path, name, e);
+            } catch (NoSuchAlgorithmException e) {
+                System.out.println("SHA256 is invalid Algorithm");
+            } catch (InvalidKeyException e) {
+                System.out.println("bad public key key");
+            } catch (SignatureException e) {
+                System.out.println("Signature exception");
+            }
+            return false;
         }
 
         private Void createPrivileged() throws RealmUnavailableException {

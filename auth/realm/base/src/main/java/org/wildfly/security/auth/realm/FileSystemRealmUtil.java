@@ -34,7 +34,7 @@ import org.wildfly.security.password.spec.Encoding;
 public class FileSystemRealmUtil {
     Identity identity;
     public FileSystemRealmUtil(String name, Path path, IdentitySharedExclusiveLock.IdentityLock lock, Charset hashCharset, Encoding hashEncoding){
-        this.identity = new Identity(name, path, lock, hashCharset, hashEncoding, null);
+        this.identity = new Identity(name, path, lock, hashCharset, hashEncoding, null, null, null);
     }
 
     public LoadedIdentity loadIdentity(boolean skipCredentials, boolean skipAttributes) throws RealmUnavailableException{
