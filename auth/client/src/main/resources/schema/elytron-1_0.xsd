@@ -429,4 +429,240 @@
         </xsd:sequence>
     </xsd:complexType>
 
+    <xsd:simpleType name="CryptoBinary">
+        <xsd:restriction base="xsd:base64Binary"> </xsd:restriction>
+    </xsd:simpleType>
+
+<!--    <xsd:element name="Signature" type="SignatureType"/>-->
+<!--    <xsd:complexType name="SignatureType">-->
+<!--        <xsd:sequence>-->
+<!--            <xsd:element ref="SignedInfo"/>-->
+<!--            <xsd:element ref="SignatureValue"/>-->
+<!--            <xsd:element ref="KeyInfo" minOccurs="0"/>-->
+<!--            <xsd:element ref="Object" minOccurs="0" maxOccurs="unbounded"/>-->
+<!--        </xsd:sequence>-->
+<!--        <xsd:attribute name="Id" type="xsd:ID" use="optional"/>-->
+<!--    </xsd:complexType>-->
+<!--    <xsd:element name="SignatureValue" type="SignatureValueType"/>-->
+<!--    <xsd:complexType name="SignatureValueType">-->
+<!--        <xsd:simpleContent>-->
+<!--            <xsd:extension base="xsd:base64Binary">-->
+<!--                <xsd:attribute name="Id" type="xsd:ID" use="optional"/>-->
+<!--            </xsd:extension>-->
+<!--        </xsd:simpleContent>-->
+<!--    </xsd:complexType>-->
+<!--    &lt;!&ndash;  Start SignedInfo  &ndash;&gt;-->
+<!--    <xsd:element name="SignedInfo" type="SignedInfoType"/>-->
+<!--    <xsd:complexType name="SignedInfoType">-->
+<!--        <xsd:sequence>-->
+<!--            <xsd:element ref="CanonicalizationMethod"/>-->
+<!--            <xsd:element ref="SignatureMethod"/>-->
+<!--            <xsd:element ref="Reference" maxOccurs="unbounded"/>-->
+<!--        </xsd:sequence>-->
+<!--        <xsd:attribute name="Id" type="xsd:ID" use="optional"/>-->
+<!--    </xsd:complexType>-->
+<!--    <xsd:element name="CanonicalizationMethod" type="CanonicalizationMethodType"/>-->
+<!--    <xsd:complexType name="CanonicalizationMethodType" mixed="true">-->
+<!--        <xsd:sequence>-->
+<!--            <xsd:any namespace="##any" minOccurs="0" maxOccurs="unbounded"/>-->
+<!--            &lt;!&ndash;  (0,unbounded) elements from (1,1) namespace  &ndash;&gt;-->
+<!--        </xsd:sequence>-->
+<!--        <xsd:attribute name="Algorithm" type="xsd:anyURI" use="required"/>-->
+<!--    </xsd:complexType>-->
+<!--    <xsd:element name="SignatureMethod" type="SignatureMethodType"/>-->
+<!--    <xsd:complexType name="SignatureMethodType" mixed="true">-->
+<!--        <xsd:sequence>-->
+<!--            <xsd:element name="HMACOutputLength" minOccurs="0" type="HMACOutputLengthType"/>-->
+<!--            <xsd:any namespace="##other" minOccurs="0" maxOccurs="unbounded"/>-->
+<!--            &lt;!&ndash;  (0,unbounded) elements from (1,1) external namespace  &ndash;&gt;-->
+<!--        </xsd:sequence>-->
+<!--        <xsd:attribute name="Algorithm" type="xsd:anyURI" use="required"/>-->
+<!--    </xsd:complexType>-->
+<!--    &lt;!&ndash;  Start Reference  &ndash;&gt;-->
+<!--    <xsd:element name="Reference" type="ReferenceType"/>-->
+<!--    <xsd:complexType name="ReferenceType">-->
+<!--        <xsd:sequence>-->
+<!--            <xsd:element ref="Transforms" minOccurs="0"/>-->
+<!--            <xsd:element ref="DigestMethod"/>-->
+<!--            <xsd:element ref="DigestValue"/>-->
+<!--        </xsd:sequence>-->
+<!--        <xsd:attribute name="Id" type="xsd:ID" use="optional"/>-->
+<!--        <xsd:attribute name="URI" type="xsd:anyURI" use="optional"/>-->
+<!--        <xsd:attribute name="Type" type="xsd:anyURI" use="optional"/>-->
+<!--    </xsd:complexType>-->
+<!--    <xsd:element name="Transforms" type="TransformsType"/>-->
+<!--    <xsd:complexType name="TransformsType">-->
+<!--        <xsd:sequence>-->
+<!--            <xsd:element ref="Transform" maxOccurs="unbounded"/>-->
+<!--        </xsd:sequence>-->
+<!--    </xsd:complexType>-->
+<!--    <xsd:element name="Transform" type="TransformType"/>-->
+<!--    <xsd:complexType name="TransformType" mixed="true">-->
+<!--        <xsd:choice minOccurs="0" maxOccurs="unbounded">-->
+<!--            <xsd:any namespace="##other" processContents="lax"/>-->
+<!--            &lt;!&ndash;  (1,1) elements from (0,unbounded) namespaces  &ndash;&gt;-->
+<!--            <xsd:element name="XPath" type="xsd:string"/>-->
+<!--        </xsd:choice>-->
+<!--        <xsd:attribute name="Algorithm" type="xsd:anyURI" use="required"/>-->
+<!--    </xsd:complexType>-->
+<!--    &lt;!&ndash;  End Reference  &ndash;&gt;-->
+<!--    <xsd:element name="DigestMethod" type="DigestMethodType"/>-->
+<!--    <xsd:complexType name="DigestMethodType" mixed="true">-->
+<!--        <xsd:sequence>-->
+<!--            <xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>-->
+<!--        </xsd:sequence>-->
+<!--        <xsd:attribute name="Algorithm" type="xsd:anyURI" use="required"/>-->
+<!--    </xsd:complexType>-->
+<!--    <xsd:element name="DigestValue" type="DigestValueType"/>-->
+<!--    <xsd:simpleType name="DigestValueType">-->
+<!--        <xsd:restriction base="xsd:base64Binary"/>-->
+<!--    </xsd:simpleType>-->
+<!--    &lt;!&ndash;  End SignedInfo  &ndash;&gt;-->
+<!--    &lt;!&ndash;  Start KeyInfo  &ndash;&gt;-->
+<!--    <xsd:element name="KeyInfo" type="KeyInfoType"/>-->
+<!--    <xsd:complexType name="KeyInfoType" mixed="true">-->
+<!--        <xsd:choice maxOccurs="unbounded">-->
+<!--            <xsd:element ref="KeyName"/>-->
+<!--            <xsd:element ref="KeyValue"/>-->
+<!--            <xsd:element ref="RetrievalMethod"/>-->
+<!--            <xsd:element ref="X509Data"/>-->
+<!--            <xsd:element ref="PGPData"/>-->
+<!--            <xsd:element ref="SPKIData"/>-->
+<!--            <xsd:element ref="MgmtData"/>-->
+<!--            <xsd:any processContents="lax" namespace="##other"/>-->
+<!--            &lt;!&ndash;  (1,1) elements from (0,unbounded) namespaces  &ndash;&gt;-->
+<!--        </xsd:choice>-->
+<!--        <xsd:attribute name="Id" type="xsd:ID" use="optional"/>-->
+<!--    </xsd:complexType>-->
+<!--    <xsd:element name="KeyName" type="xsd:string"/>-->
+<!--    <xsd:element name="MgmtData" type="xsd:string"/>-->
+<!--    <xsd:element name="KeyValue" type="KeyValueType"/>-->
+<!--    <xsd:complexType name="KeyValueType" mixed="true">-->
+<!--        <xsd:choice>-->
+<!--            <xsd:element ref="DSAKeyValue"/>-->
+<!--            <xsd:element ref="RSAKeyValue"/>-->
+<!--            <xsd:any namespace="##other" processContents="lax"/>-->
+<!--        </xsd:choice>-->
+<!--    </xsd:complexType>-->
+<!--    <xsd:element name="RetrievalMethod" type="RetrievalMethodType"/>-->
+<!--    <xsd:complexType name="RetrievalMethodType">-->
+<!--        <xsd:sequence>-->
+<!--            <xsd:element ref="Transforms" minOccurs="0"/>-->
+<!--        </xsd:sequence>-->
+<!--        <xsd:attribute name="URI" type="xsd:anyURI"/>-->
+<!--        <xsd:attribute name="Type" type="xsd:anyURI" use="optional"/>-->
+<!--    </xsd:complexType>-->
+<!--    &lt;!&ndash;  Start X509Data  &ndash;&gt;-->
+<!--    <xsd:element name="X509Data" type="X509DataType"/>-->
+<!--    <xsd:complexType name="X509DataType">-->
+<!--        <xsd:sequence maxOccurs="unbounded">-->
+<!--            <xsd:choice>-->
+<!--                <xsd:element name="X509IssuerSerial" type="X509IssuerSerialType"/>-->
+<!--                <xsd:element name="X509SKI" type="xsd:base64Binary"/>-->
+<!--                <xsd:element name="X509SubjectName" type="xsd:string"/>-->
+<!--                <xsd:element name="X509Certificate" type="xsd:base64Binary"/>-->
+<!--                <xsd:element name="X509CRL" type="xsd:base64Binary"/>-->
+<!--                <xsd:any namespace="##other" processContents="lax"/>-->
+<!--            </xsd:choice>-->
+<!--        </xsd:sequence>-->
+<!--    </xsd:complexType>-->
+<!--    <xsd:complexType name="X509IssuerSerialType">-->
+<!--        <xsd:sequence>-->
+<!--            <xsd:element name="X509IssuerName" type="xsd:string"/>-->
+<!--            <xsd:element name="X509SerialNumber" type="xsd:integer"/>-->
+<!--        </xsd:sequence>-->
+<!--    </xsd:complexType>-->
+<!--    &lt;!&ndash;  End X509Data  &ndash;&gt;-->
+<!--    &lt;!&ndash;  Begin PGPData  &ndash;&gt;-->
+<!--    <xsd:element name="PGPData" type="PGPDataType"/>-->
+<!--    <xsd:complexType name="PGPDataType">-->
+<!--        <xsd:choice>-->
+<!--            <xsd:sequence>-->
+<!--                <xsd:element name="PGPKeyID" type="xsd:base64Binary"/>-->
+<!--                <xsd:element name="PGPKeyPacket" type="xsd:base64Binary" minOccurs="0"/>-->
+<!--                <xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>-->
+<!--            </xsd:sequence>-->
+<!--            <xsd:sequence>-->
+<!--                <xsd:element name="PGPKeyPacket" type="xsd:base64Binary"/>-->
+<!--                <xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>-->
+<!--            </xsd:sequence>-->
+<!--        </xsd:choice>-->
+<!--    </xsd:complexType>-->
+<!--    &lt;!&ndash;  End PGPData  &ndash;&gt;-->
+<!--    &lt;!&ndash;  Begin SPKIData  &ndash;&gt;-->
+<!--    <xsd:element name="SPKIData" type="SPKIDataType"/>-->
+<!--    <xsd:complexType name="SPKIDataType">-->
+<!--        <xsd:sequence maxOccurs="unbounded">-->
+<!--            <xsd:element name="SPKISexp" type="xsd:base64Binary"/>-->
+<!--            <xsd:any namespace="##other" processContents="lax" minOccurs="0"/>-->
+<!--        </xsd:sequence>-->
+<!--    </xsd:complexType>-->
+<!--    &lt;!&ndash;  End SPKIData  &ndash;&gt;-->
+<!--    &lt;!&ndash;  End KeyInfo  &ndash;&gt;-->
+<!--    &lt;!&ndash;  Start Object (Manifest, SignatureProperty)  &ndash;&gt;-->
+<!--    <xsd:element name="Object" type="ObjectType"/>-->
+<!--    <xsd:complexType name="ObjectType" mixed="true">-->
+<!--        <xsd:sequence minOccurs="0" maxOccurs="unbounded">-->
+<!--            <xsd:any namespace="##any" processContents="lax"/>-->
+<!--        </xsd:sequence>-->
+<!--        <xsd:attribute name="Id" type="xsd:ID" use="optional"/>-->
+<!--        <xsd:attribute name="MimeType" type="xsd:string" use="optional"/>-->
+<!--        &lt;!&ndash;  add a grep facet  &ndash;&gt;-->
+<!--        <xsd:attribute name="Encoding" type="xsd:anyURI" use="optional"/>-->
+<!--    </xsd:complexType>-->
+<!--    <xsd:element name="Manifest" type="ManifestType"/>-->
+<!--    <xsd:complexType name="ManifestType">-->
+<!--        <xsd:sequence>-->
+<!--            <xsd:element ref="Reference" maxOccurs="unbounded"/>-->
+<!--        </xsd:sequence>-->
+<!--        <xsd:attribute name="Id" type="xsd:ID" use="optional"/>-->
+<!--    </xsd:complexType>-->
+<!--    <xsd:element name="SignatureProperties" type="SignaturePropertiesType"/>-->
+<!--    <xsd:complexType name="SignaturePropertiesType">-->
+<!--        <xsd:sequence>-->
+<!--            <xsd:element ref="SignatureProperty" maxOccurs="unbounded"/>-->
+<!--        </xsd:sequence>-->
+<!--        <xsd:attribute name="Id" type="xsd:ID" use="optional"/>-->
+<!--    </xsd:complexType>-->
+<!--    <xsd:element name="SignatureProperty" type="SignaturePropertyType"/>-->
+<!--    <xsd:complexType name="SignaturePropertyType" mixed="true">-->
+<!--        <xsd:choice maxOccurs="unbounded">-->
+<!--            <xsd:any namespace="##other" processContents="lax"/>-->
+<!--            &lt;!&ndash;  (1,1) elements from (1,unbounded) namespaces  &ndash;&gt;-->
+<!--        </xsd:choice>-->
+<!--        <xsd:attribute name="Target" type="xsd:anyURI" use="required"/>-->
+<!--        <xsd:attribute name="Id" type="xsd:ID" use="optional"/>-->
+<!--    </xsd:complexType>-->
+<!--    &lt;!&ndash;  End Object (Manifest, SignatureProperty)  &ndash;&gt;-->
+<!--    &lt;!&ndash;  Start Algorithm Parameters  &ndash;&gt;-->
+<!--    <xsd:simpleType name="HMACOutputLengthType">-->
+<!--        <xsd:restriction base="xsd:integer"/>-->
+<!--    </xsd:simpleType>-->
+<!--    &lt;!&ndash;  Start KeyValue Element-types  &ndash;&gt;-->
+<!--    <xsd:element name="DSAKeyValue" type="DSAKeyValueType"/>-->
+<!--    <xsd:complexType name="DSAKeyValueType">-->
+<!--        <xsd:sequence>-->
+<!--            <xsd:sequence minOccurs="0">-->
+<!--                <xsd:element name="P" type="CryptoBinary"/>-->
+<!--                <xsd:element name="Q" type="CryptoBinary"/>-->
+<!--            </xsd:sequence>-->
+<!--            <xsd:element name="G" type="CryptoBinary" minOccurs="0"/>-->
+<!--            <xsd:element name="Y" type="CryptoBinary"/>-->
+<!--            <xsd:element name="J" type="CryptoBinary" minOccurs="0"/>-->
+<!--            <xsd:sequence minOccurs="0">-->
+<!--                <xsd:element name="Seed" type="CryptoBinary"/>-->
+<!--                <xsd:element name="PgenCounter" type="CryptoBinary"/>-->
+<!--            </xsd:sequence>-->
+<!--        </xsd:sequence>-->
+<!--    </xsd:complexType>-->
+<!--    <xsd:element name="RSAKeyValue" type="RSAKeyValueType"/>-->
+<!--    <xsd:complexType name="RSAKeyValueType">-->
+<!--        <xsd:sequence>-->
+<!--            <xsd:element name="Modulus" type="CryptoBinary"/>-->
+<!--            <xsd:element name="Exponent" type="CryptoBinary"/>-->
+<!--        </xsd:sequence>-->
+<!--    </xsd:complexType>-->
+<!--    &lt;!&ndash;  End KeyValue Element-types  &ndash;&gt;-->
+<!--    &lt;!&ndash;  End Signature  &ndash;&gt;-->
+
 </xsd:schema>

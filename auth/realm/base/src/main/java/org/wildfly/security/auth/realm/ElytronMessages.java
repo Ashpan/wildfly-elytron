@@ -133,4 +133,10 @@ interface ElytronMessages extends BasicLogger {
     @Message(id = 13001, value = "Realm is failing over.")
     void realmFailover(@Cause RealmUnavailableException rue);
 
+    @Message(id = 13002, value = "Signature for the following identity is invalid: %s.")
+    IllegalStateException invalidIdentitySignature(String s);
+
+    @Message(id = 13003, value = "Unable to create a signature for the file: %s.")
+    IllegalStateException unableToGenerateSignature(String s);
+
 }

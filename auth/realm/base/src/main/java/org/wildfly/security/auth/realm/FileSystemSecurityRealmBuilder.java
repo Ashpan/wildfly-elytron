@@ -20,9 +20,9 @@ package org.wildfly.security.auth.realm;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import javax.crypto.SecretKey;
-
 import org.wildfly.common.Assert;
 import org.wildfly.security.auth.server.NameRewriter;
 import org.wildfly.security.password.spec.Encoding;
@@ -42,6 +42,8 @@ public class FileSystemSecurityRealmBuilder {
     private Charset hashCharset;
     private Encoding hashEncoding;
     private SecretKey secretKey;
+    private PrivateKey privateKey;
+    private PublicKey publicKey;
 
     FileSystemSecurityRealmBuilder() {
     }
@@ -129,6 +131,30 @@ public class FileSystemSecurityRealmBuilder {
     }
 
     /**
+     * Set the PrivateKey to be used by the realm.
+     *
+     * @param privateKey the asymmetric PrivateKey used to sign the identity files used for file integrity (must not be {@code null})
+     * @return this builder.
+     */
+    public FileSystemSecurityRealmBuilder setPrivateKey(final PrivateKey privateKey) {
+        Assert.checkNotNullParam("privateKey", privateKey);
+        this.privateKey = privateKey;
+        return this;
+    }
+
+    /**
+     * Set the PublicKey to be used by the realm.
+     *
+     * @param publicKey the asymmetric PublicKey used to verify the identity files used for file integrity (must not be {@code null})
+     * @return this builder.
+     */
+    public FileSystemSecurityRealmBuilder setPublicKey(final PublicKey publicKey) {
+        Assert.checkNotNullParam("publicKey", publicKey);
+        this.publicKey = publicKey;
+        return this;
+    }
+
+    /**
      * Builds a new {@link FileSystemSecurityRealm} instance based on configuration defined for this {@link FileSystemSecurityRealmBuilder} instance.
      *
      * @return the built realm
@@ -144,6 +170,6 @@ public class FileSystemSecurityRealmBuilder {
         if (hashCharset == null) {
             hashCharset = StandardCharsets.UTF_8;
         }
-        return new FileSystemSecurityRealm(root, nameRewriter, levels, encoded, hashEncoding, hashCharset, secretKey);
+        return new FileSystemSecurityRealm(root, nameRewriter, levels, encoded, hashEncoding, hashCharset, secretKey, privateKey, publicKey);
     }
 }
