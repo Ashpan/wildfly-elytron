@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><identity xmlns="urn:elytron:1.0">
+    <credentials>
+        <password algorithm="clear" format="base64">AXBhc3N3b3JkITQ=</password>
+    </credentials>
+    <attributes>
+        <attribute name="Roles" value="Admin"/>
+        <attribute name="Roles" value="Boy"/>
+        <attribute name="Roles" value="Developer"/>
+    </attributes>
+<Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments"/><SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/><Reference URI=""><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/></Transforms><DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><DigestValue>xMxdh+QDVEa1jGLBH7xnCBGvmqs0t7ACydIGHE87r20=</DigestValue></Reference></SignedInfo><SignatureValue>l7OLuV6anDzBc2/44/OQQdL6Qb/oCjy6028XL1Db9gMnQJg5iXgrJ4cM5ZBVflStsq9KwzK0bRQy&#13;
+VVdEzKE6MAKvpmOYh1R3Nj3Bpn/fmSU+qqhdR7y5ATQKg2DM9JfUzKkOrtn2ArhHoQceSnPOW8nx&#13;
+3UqNNdAf+jY5XpBDyjk=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>npFkxrLkFi8jlbZrarnHG4bPUz2+I4Cz9y4UWu95H2jKiIM3tg2MJ42J/GtZnD9ZigT2D9jO97GL&#13;
+jsJIRALutY4noXEhPGSssHFkSB5Yeop5vDAiqU8sT52G1EVyctCL7wLvaG5ir1e3F4XEUr5ByJsV&#13;
+ayzOFxtJHbCY37lDbz8=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue></KeyInfo></Signature></identity>
