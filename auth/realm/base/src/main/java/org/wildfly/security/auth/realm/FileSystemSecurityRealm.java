@@ -751,7 +751,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                 transformer.transform(source, result);
 
             } catch (Exception e) {
-                System.out.println("Error");
+                System.out.println(e);
             }
         }
 
