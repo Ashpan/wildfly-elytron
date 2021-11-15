@@ -135,7 +135,7 @@ public class FileSystemSecurityRealmTest {
         identity.dispose();
     }
 
-//    @Test
+    @Test
     public void testCreateIdentityWithLevelsIntegrity() throws Exception {
         FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
                 .setRoot(getRootPath())
@@ -185,7 +185,7 @@ public class FileSystemSecurityRealmTest {
         existingIdentity.dispose();
     }
 
-//    @Test
+    @Test
     public void testCreateAndLoadIdentityIntegrity() throws Exception {
         FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
                 .setRoot(getRootPath())
@@ -219,20 +219,6 @@ public class FileSystemSecurityRealmTest {
         existingIdentity.dispose();
     }
 
-    @Test (expected = IllegalStateException.class)
-    public void testInvalidSignature() throws Exception {
-        FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath(false))
-                .setLevels(3)
-                .setPublicKey(publicKey)
-                .setPrivateKey(privateKey)
-                .build();
-        ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("user"));
-        char[] actualPassword = "secretPassword".toCharArray();
-        existingIdentity.verifyEvidence(new PasswordGuessEvidence(actualPassword));
-        existingIdentity.dispose();
-    }
-
     @Test
     public void testShortUsername() throws Exception {
         FileSystemSecurityRealm securityRealm = new FileSystemSecurityRealm(getRootPath(), 3);
@@ -249,7 +235,7 @@ public class FileSystemSecurityRealmTest {
         shortUsername(securityRealm);
     }
 
-//    @Test
+    @Test
     public void testShortUsernameIntegrity() throws Exception {
         FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
                 .setRoot(getRootPath())
@@ -286,7 +272,7 @@ public class FileSystemSecurityRealmTest {
         specialCharacters(securityRealm);
     }
 
-//    @Test
+    @Test
     public void testSpecialCharactersIntegrity() throws Exception {
         FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
                 .setRoot(getRootPath())
@@ -324,7 +310,7 @@ public class FileSystemSecurityRealmTest {
         caseSensitive(securityRealm);
     }
 
-//    @Test
+    @Test
     public void testCaseSensitiveIntegrity() throws Exception {
         FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
                 .setRoot(getRootPath())
@@ -381,7 +367,7 @@ public class FileSystemSecurityRealmTest {
         createAndLoadAndDeleteIdentity("encryption");
     }
 
-//    @Test
+    @Test
     public void testCreateAndLoadAndDeleteIdentityIntegrity() throws Exception {
         createAndLoadAndDeleteIdentity("integrity");
     }
@@ -432,7 +418,7 @@ public class FileSystemSecurityRealmTest {
         createIdentityWithAttributes("encryption");
     }
 
-//    @Test
+    @Test
     public void testCreateIdentityWithAttributesIntegrity() throws Exception {
         createIdentityWithAttributes("integrity");
     }
@@ -455,7 +441,7 @@ public class FileSystemSecurityRealmTest {
         assertCreateIdentityWithPassword(actualPassword, clearPassword, secretKey);
     }
 
-//    @Test
+    @Test
     public void testCreateIdentityWithClearPasswordIntegrity() throws Exception {
         char[] actualPassword = "secretPassword".toCharArray();
         PasswordFactory factory = PasswordFactory.getInstance(ClearPassword.ALGORITHM_CLEAR);
@@ -486,7 +472,7 @@ public class FileSystemSecurityRealmTest {
         assertCreateIdentityWithPassword(actualPassword, bCryptPassword, secretKey);
     }
 
-//    @Test
+    @Test
     public void testCreateIdentityWithBcryptCredentialIntegrity() throws Exception {
         PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT);
         char[] actualPassword = "secretPassword".toCharArray();
@@ -517,7 +503,7 @@ public class FileSystemSecurityRealmTest {
         assertCreateIdentityWithPassword(actualPassword, bCryptPassword, Encoding.HEX, StandardCharsets.UTF_8, secretKey);
     }
 
-//    @Test
+    @Test
     public void testCreateIdentityWithBcryptCredentialHexEncodedIntegrity() throws Exception {
         PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT);
         char[] actualPassword = "secretPassword".toCharArray();
@@ -549,7 +535,7 @@ public class FileSystemSecurityRealmTest {
         assertCreateIdentityWithPassword(actualPassword, bCryptPassword, Encoding.BASE64, Charset.forName("gb2312"), secretKey);
     }
 
-//    @Test
+    @Test
     public void testCreateIdentityWithBcryptCredentialBase64AndCharsetIntegrity() throws Exception {
         PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT);
         char[] actualPassword = "password密码".toCharArray();
@@ -593,7 +579,7 @@ public class FileSystemSecurityRealmTest {
         assertCreateIdentityWithPassword(actualPassword, scramPassword, secretKey);
     }
 
-//    @Test
+    @Test
     public void testCreateIdentityWithScramCredentialIntegrity() throws Exception {
         char[] actualPassword = "secretPassword".toCharArray();
         byte[] salt = generateRandomSalt(BCRYPT_SALT_SIZE);
@@ -649,7 +635,7 @@ public class FileSystemSecurityRealmTest {
         assertCreateIdentityWithPassword(actualPassword, digestPassword, secretKey);
     }
 
-//    @Test
+    @Test
     public void testCreateIdentityWithDigestIntegrity() throws Exception {
         char[] actualPassword = "secretPassword".toCharArray();
         PasswordFactory factory = PasswordFactory.getInstance(DigestPassword.ALGORITHM_DIGEST_SHA_512);
@@ -693,7 +679,7 @@ public class FileSystemSecurityRealmTest {
         assertCreateIdentityWithPassword(actualPassword, digestPassword, Encoding.HEX, Charset.forName("KOI8-R"), secretKey);
     }
 
-//    @Test
+    @Test
     public void testCreateIdentityWithDigestHexEncodedAndCharsetIntegrity() throws Exception {
         char[] actualPassword = "secretPassword".toCharArray();
         PasswordFactory factory = PasswordFactory.getInstance(DigestPassword.ALGORITHM_DIGEST_SHA_512);
@@ -782,7 +768,7 @@ public class FileSystemSecurityRealmTest {
         assertCreateIdentityWithPassword(actualPassword, tsdp, Encoding.HEX, Charset.forName("gb2312"), secretKey);
     }
 
-//    @Test
+    @Test
     public void testCreateIdentityWithSimpleSaltedDigestHexEncodedAndCharsetIntegrity() throws Exception {
         char[] actualPassword = "password密码".toCharArray();
         byte[] salt = generateRandomSalt(BCRYPT_SALT_SIZE);
@@ -870,7 +856,7 @@ public class FileSystemSecurityRealmTest {
         createIdentityWithEverything("encryption");
     }
 
-//    @Test
+    @Test
     public void testCreateIdentityWithEverythingIntegrity() throws Exception {
         createIdentityWithEverything("integrity");
     }
@@ -929,7 +915,7 @@ public class FileSystemSecurityRealmTest {
         credentialReplacing("encryption");
     }
 
-//    @Test
+    @Test
     public void testCredentialReplacingIntegrity() throws Exception {
         credentialReplacing("integrity");
     }
@@ -1006,7 +992,7 @@ public class FileSystemSecurityRealmTest {
         getRootPath(); // will fail on windows if iterator not closed correctly
     }
 
-//    @Test
+    @Test
     public void testIteratingIntegrity() throws Exception {
         FileSystemSecurityRealm securityRealm = createRealmWithTwoIdentities(publicKey, privateKey);
         Iterator<ModifiableRealmIdentity> iterator = securityRealm.getRealmIdentityIterator();
@@ -1076,6 +1062,20 @@ public class FileSystemSecurityRealmTest {
                 .setSecretKey(SecretKeyUtil.generateSecretKey(192))
                 .build();
         ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
+        existingIdentity.verifyEvidence(new PasswordGuessEvidence(actualPassword));
+        existingIdentity.dispose();
+    }
+
+    @Test (expected = IllegalStateException.class)
+    public void testInvalidSignature() throws Exception {
+        FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
+                .setRoot(getRootPath(false))
+                .setLevels(3)
+                .setPublicKey(publicKey)
+                .setPrivateKey(privateKey)
+                .build();
+        ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("user"));
+        char[] actualPassword = "secretPassword".toCharArray();
         existingIdentity.verifyEvidence(new PasswordGuessEvidence(actualPassword));
         existingIdentity.dispose();
     }
