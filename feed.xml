@@ -5,7 +5,7 @@
         <title>WildFly Elytron</title>
         <link>https://wildfly-security.github.io/wildfly-elytron</link>
         <description></description>
-        <lastBuildDate>Wed, 08 Dec 2021 18:41:18 +0000</lastBuildDate>
+        <lastBuildDate>Wed, 08 Dec 2021 18:44:32 +0000</lastBuildDate>
         
         <item>
             <title>Using failover realm in Elytron</title>
