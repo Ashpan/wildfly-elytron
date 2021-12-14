@@ -140,13 +140,97 @@
 <div class="sect1">
 <h2 id="an-overview-of-filesystem-realm-encryption-and-integrity"><a class="anchor" href="#an-overview-of-filesystem-realm-encryption-and-integrity"></a>An Overview of Filesystem Realm Encryption and Integrity</h2>
 <div class="sectionbody">
-
+<div class="paragraph">
+<p>Currently the filesystem realm does not offer support for encryption of the entire filesystem. For example, a sample identity file could contain the following information. The file name here would be <code>quickstartuser-OF2WSY3LON2GC4TUKVZWK4Q.xml</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">&lt;?xml version='1.0' encoding='UTF-8'?&gt;
+&lt;identity xmlns="urn:elytron:1.0"&gt;
+    &lt;credentials&gt;
+        &lt;password algorithm="clear" format="base64"&gt;AXF1aWNrc3RhcnRQd2QxIQ==&lt;/password&gt;
+    &lt;/credentials&gt;
+    &lt;attributes&gt;
+        &lt;attribute name="Roles" value="guest"/&gt;
+    &lt;/attributes&gt;&lt;/identity&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This poses a security issue as if anyone has access to the filesystem, they could find the base64 encoded password of the user, and all their attributes in plaintext. To fix this issue, if encryption is now enabled, it will encrypt the passwords, and all attributes with a SecretKey, and the filename will no longer contain their username in plaintext form, but instead a base64 encoding of the name.</p>
+</div>
+<div class="paragraph">
+<p>If that same identity was encrypted with a SecretKey, this is what the identity file would be, with the filename <code>OF2WSY3LON2GC4TUKVZWK4Q.xml</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">&lt;?xml version='1.0' encoding='UTF-8'?&gt;
+&lt;identity xmlns="urn:elytron:1.0"&gt;
+    &lt;credentials&gt;
+        &lt;password algorithm="clear" format="enc_base64"&gt;bgKRfndfcJwdA+8lpHpjtQ==&lt;/password&gt;
+    &lt;/credentials&gt;
+    &lt;attributes&gt;
+        &lt;attribute name="ngnS0g/i9xfK1yPEs0gd5Q==" value="01GCn5bePl8gvnvpyVTN2g=="/&gt;
+    &lt;/attributes&gt;&lt;/identity&gt;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Filesystem integrity was also added into this feature. This is very important as it ensures that the filesystem data has not been tampered with since the last time it was written to. This works by generating a signature using a KeyPair that contains a PrivateKey and PublicKey. This signature is generated based on the file contents. A single character change in the file will regenerate the signature to something completely different. This allows us to ensure the file is exactly how we expect it to be. The signature will be in the identity before the end of the file. The identity file with integrity verification enabled would look like the following.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">&lt;?xml version="1.0" encoding="UTF-8" standalone="no"?&gt;&lt;identity xmlns="urn:elytron:1.0"&gt;
+    &lt;credentials&gt;
+        &lt;password algorithm="bcrypt" format="base64"&gt;BQoQX9aqzoP3jgFXIWh9GOlIq1secNEbRofmD9lKHUd+/clh+dMwhusP&lt;/password&gt;
+        &lt;otp algorithm="otp-sha1" hash="UF2In5AIWEc=" seed="a2UxMjM0" sequence="500"/&gt;
+    &lt;/credentials&gt;
+    &lt;attributes&gt;
+        &lt;attribute name="firstName" value="John"/&gt;
+        &lt;attribute name="lastName" value="Smith"/&gt;
+        &lt;attribute name="roles" value="Employee"/&gt;
+        &lt;attribute name="roles" value="Manager"/&gt;
+        &lt;attribute name="roles" value="Admin"/&gt;
+    &lt;/attributes&gt;&lt;Signature xmlns="http://www.w3.org/2000/09/xmldsig#"&gt;&lt;SignedInfo&gt;&lt;CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/&gt;&lt;SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/&gt;&lt;Reference URI=""&gt;&lt;Transforms&gt;&lt;Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/&gt;&lt;/Transforms&gt;&lt;DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/&gt;&lt;DigestValue&gt;Vt9Hea6ZOmYH9riBadwPNL2yY49B7X6S2OVfG4/1h4U=&lt;/DigestValue&gt;&lt;/Reference&gt;&lt;/SignedInfo&gt;&lt;SignatureValue&gt;Z+oXEAyowAMsnp6Myi2+8igRivY2LVeHy3OfxfAn/43v6hm4KLqb2rCFROMT9SrwowdIA0Ds9l0P&amp;#13;
+46EXmsYeTXHJjsS0fI7fmpP6UpyHjslpOHuSIbOOrsk2zZRPNEoMoWzgwx8xRJb9AP/Ut89ZJ66i&amp;#13;
+klKih2xncnr2hnjDjKBsX+McIl9oB3JQwDFtFkfW5OxmOGbNkftN7wH7nepfBYkdAog81zPYsDgy&amp;#13;
+JC7JPOLW4M4e2AgUrApbsR/9D80zW80rsZJ0ifRUhMeBG/PQ8LTLuLOKyp6NXB5V/U++LwmH09Bb&amp;#13;
+KrzDb51mdabo/+gx1FtV64AHAWc+F8f3fHcE3A==&lt;/SignatureValue&gt;&lt;KeyInfo&gt;&lt;KeyValue&gt;&lt;RSAKeyValue&gt;&lt;Modulus&gt;j5K7L63eAwjCZLEZfJH7CwG6bFhUeE/ewzILiSSLcPxM7rG4xY6QgGlPzQ5mu+G31aHdlLrG9yWt&amp;#13;
+Wazz1LsWFAi9NJJt3TEZ0PA8UdWUPeo5ddqpGPcjbpdOp1MgTyOqmYnJ3vXQYYsBGr+LCSfitATV&amp;#13;
+mG8qbtz0DWneybWByh9osWRtjt/nd2HiFyKn/E0/kXY2eIuz/MO/LG+b28bTpX3WUR5/gJnNdxWe&amp;#13;
+giVJmFk0vNf+cS5BQmMp3HUKl1hHihT+oTkUHBwGr0Ovbw33/8g97pqSf1itv0DBuL0TVg27hgq2&amp;#13;
+KXWgdxmWsjEyTI6q2kjoY6ANopnXHR9b3AV5Tw==&lt;/Modulus&gt;&lt;Exponent&gt;AQAB&lt;/Exponent&gt;&lt;/RSAKeyValue&gt;&lt;/KeyValue&gt;&lt;/KeyInfo&gt;&lt;/Signature&gt;&lt;/identity&gt;</code></pre>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="filesystem-realm-encryption-and-integrity-configuration"><a class="anchor" href="#filesystem-realm-encryption-and-integrity-configuration"></a>Filesystem Realm Encryption and Integrity Configuration</h2>
 <div class="sectionbody">
-
+<div class="paragraph">
+<p>To configure filesystem encryption, the follwing two attributes are required:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>credential-store</code>: This attribute is a reference to the credential store that contains the SecretKey used to encrypt and decrypt the filesystem-realm.</p>
+</li>
+<li>
+<p><code>secret-key</code>: This attribute is an alias to the secret key used to encrypt and decrypt the filesystem-realm. If the credential-store attribute is specified, this attribute is required.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>To configure filesystem integrity, another two attributes are required:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>key-store</code>: This attribute is a reference to the KeyStore that contains the key pair used to sign and verify the signature of each identity.</p>
+</li>
+<li>
+<p><code>key-store-alias</code>: This attribute is an alias to the keypair in the key-store used to sign and verify the signature of each identity. If the key-pair attribute is specified, this attribute is required.</p>
+</li>
+</ul>
+</div>
 </div>
 </div>
 <div class="sect1">
