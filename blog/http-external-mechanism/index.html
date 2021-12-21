@@ -26,10 +26,10 @@ use the specified security domain to perform role mapping to complete authorizat
 </div>>
 
     <!-- Facebook Meta Tags -->
-    <meta property="og:url" content=https://wildfly-security.github.io/blog/http-external-mechanism/>
+    <meta property="og:url" content="https://wildfly-security.github.io/blog/http-external-mechanism/"">
     <meta property="og:type" content="website">
-    <meta property="og:title" content=HTTP External Mechanism>
-    <meta property="og:description" content=<div class="paragraph">
+    <meta property="og:title" content="HTTP External Mechanism"">
+    <meta property="og:description" content="<div class="paragraph">
 <p>WildFly Elytron now supports authenticating users with the External HTTP mechanism. The External mechanism allows users to
 be authenticated with credentials established outside the server via the AJP protocol. This means if you have users authenticated
 by an Apache httpd server, these users can be forwarded to WildFly. This can be done by setting up
@@ -46,16 +46,33 @@ mechanism-configurations=[{mechanism-name=EXTERNAL}])</code></pre>
 <p>If your application is secured using this <code>http-authentication-factory</code> and a remote server forwards an authenticated
 user using the <code>REMOTE_USER</code> attribute via the AJP protocol, Elytron will accept the externally authenticated user and
 use the specified security domain to perform role mapping to complete authorization.</p>
-</div>>
-    <meta property="og:image" content="/assets/images/wildfly-elytron-logo-1200x630.jpg">
+</div>">
+    <meta property="og:image" content="https://wildfly-security.github.io/assets/images/wildfly-elytron-logo-1200x630.jpg">
 
     <!-- Twitter Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta property="twitter:domain" content=https://wildfly-security.github.io>
-    <meta property="twitter:url" content=https://wildfly-security.github.io/blog/http-external-mechanism/>
-    <meta name="twitter:title" content=HTTP External Mechanism>
-    <meta name="twitter:description" content={page.excerpt}>
-    <meta name="twitter:image" content="/assets/images/wildfly-elytron-logo-1200x630.jpg">
+    <meta property="twitter:domain" content="https://wildfly-security.github.io">
+    <meta property="twitter:url" content="https://wildfly-security.github.io/blog/http-external-mechanism/">
+    <meta name="twitter:title" content="HTTP External Mechanism">
+    <meta name="twitter:description" content="<div class="paragraph">
+<p>WildFly Elytron now supports authenticating users with the External HTTP mechanism. The External mechanism allows users to
+be authenticated with credentials established outside the server via the AJP protocol. This means if you have users authenticated
+by an Apache httpd server, these users can be forwarded to WildFly. This can be done by setting up
+Elytron to secure a WildFly deployment and specifying for the External HTTP mechanism to be used. This is done by specifying
+the <code>EXTERNAL</code> mechanism as one of the mechanism configurations to be used by the <code>http-authentication-factory</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-shell hljs" data-lang="shell">/subsystem=elytron/http-authentication-factory=web-tests:add(security-domain=example-domain, http-server-mechanism-factory=example-factory,
+mechanism-configurations=[{mechanism-name=EXTERNAL}])</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If your application is secured using this <code>http-authentication-factory</code> and a remote server forwards an authenticated
+user using the <code>REMOTE_USER</code> attribute via the AJP protocol, Elytron will accept the externally authenticated user and
+use the specified security domain to perform role mapping to complete authorization.</p>
+</div>">
+    <meta name="twitter:image" content="https://wildfly-security.github.io/assets/images/wildfly-elytron-logo-1200x630.jpg">
 
     <script src="/wildfly-elytron/assets/javascript/highlight.pack.js" type="text/javascript"></script>
 
