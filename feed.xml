@@ -5,7 +5,77 @@
         <title>WildFly Elytron</title>
         <link>https://wildfly-security.github.io/wildfly-elytron</link>
         <description></description>
-        <lastBuildDate>Thu, 16 Dec 2021 21:53:49 +0000</lastBuildDate>
+        <lastBuildDate>Tue, 21 Dec 2021 14:40:14 +0000</lastBuildDate>
+        
+        <item>
+            <title>Upcoming filesystem realm encryption and integrity support in Elytron</title>
+            <link>
+                https://wildfly-security.github.io/wildfly-elytron/blog/upcoming-filesystem-encryption-integrity/
+            </link>
+            <description>
+                Two features that we have been working during the WildFly 26 development phase is the ability to encrypt filesystem security realms with a SecretKey, and the ability to verify filesystem integrity with a KeyPair. This feature will be included in a future WildFly release. An Overview of Filesystem Realm Encryption...
+            </description>
+            <pubDate>Fri, 17 Dec 2021 00:00:00 +0000</pubDate>
+            <guid>
+                https://wildfly-security.github.io/wildfly-elytron/blog/upcoming-filesystem-encryption-integrity/
+            </guid>
+        </item>
+        
+        <item>
+            <title>Securing WildFly Apps with OpenID Connect</title>
+            <link>
+                https://wildfly-security.github.io/wildfly-elytron/blog/securing-wildfly-apps-openid-connect/
+            </link>
+            <description>
+                WildFly 25 added the ability to secure applications using OpenID Connect, without needing to make use of the Keycloak client adapter. This blog post gives an introduction to this feature. OpenID Connect New elytron-oidc-client Subsystem Deployment Configuration Subsystem Configuration Required Configuration Options OpenID Providers Securing an application using OIDC Example...
+            </description>
+            <pubDate>Fri, 17 Dec 2021 00:00:00 +0000</pubDate>
+            <guid>
+                https://wildfly-security.github.io/wildfly-elytron/blog/securing-wildfly-apps-openid-connect/
+            </guid>
+        </item>
+        
+        <item>
+            <title>New Security Features in WildFly</title>
+            <link>
+                https://wildfly-security.github.io/wildfly-elytron/blog/new-security-features-wildfly/
+            </link>
+            <description>
+                Since WildFly 26 was just released, we wanted to highlight a new security feature included in this release and a few other security features as well. Support for JAAS Security Realms in WildFly 26 WildFly 26 now adds support for JAAS security realms to the Elytron subsystem. This means that...
+            </description>
+            <pubDate>Fri, 17 Dec 2021 00:00:00 +0000</pubDate>
+            <guid>
+                https://wildfly-security.github.io/wildfly-elytron/blog/new-security-features-wildfly/
+            </guid>
+        </item>
+        
+        <item>
+            <title>Using a JAAS realm in Elytron</title>
+            <link>
+                https://wildfly-security.github.io/wildfly-elytron/blog/jaas-realm/
+            </link>
+            <description>
+                The Elytron subsystem already provides various security realms like LDAP realm, JDBC realm, filesystem realm, and others for common use cases. Starting from WildFly 26, you can also configure a JAAS security realm in the Elytron subsystem in order to use custom Login Modules for authentication and authorization. A JAAS...
+            </description>
+            <pubDate>Fri, 17 Dec 2021 00:00:00 +0000</pubDate>
+            <guid>
+                https://wildfly-security.github.io/wildfly-elytron/blog/jaas-realm/
+            </guid>
+        </item>
+        
+        <item>
+            <title>Upcoming client side default SSL context provider</title>
+            <link>
+                https://wildfly-security.github.io/wildfly-elytron/blog/client-side-jvm-wide-default-sslcontext/
+            </link>
+            <description>
+                Currently it is possible to configure SSL contexts in the Elytron client configuration which can be used by interacting with the Elytron client and its APIs. In a future WildFly release, we will provide the ability to register a JVM wide default SSL context that other libraries can obtain without...
+            </description>
+            <pubDate>Fri, 17 Dec 2021 00:00:00 +0000</pubDate>
+            <guid>
+                https://wildfly-security.github.io/wildfly-elytron/blog/client-side-jvm-wide-default-sslcontext/
+            </guid>
+        </item>
         
         <item>
             <title>Using failover realm in Elytron</title>
@@ -74,76 +144,6 @@
             <pubDate>Thu, 22 Jul 2021 00:00:00 +0000</pubDate>
             <guid>
                 https://wildfly-security.github.io/wildfly-elytron/blog/open-source-day-summer-recap/
-            </guid>
-        </item>
-        
-        <item>
-            <title>Installing Keycloak OIDC adaptor using the Galleon CLI</title>
-            <link>
-                https://wildfly-security.github.io/wildfly-elytron/blog/galleon-cli-keycloak/
-            </link>
-            <description>
-                Traditionally to install WildFly you would download a complete archive of the application server distribution, unzip it locally and run it directly from where it was unzipped. Subsequently to install the Keycloak adaptor for WildFly a second archive would be downloaded and unzipped on top of the WildFly installation and...
-            </description>
-            <pubDate>Thu, 01 Jul 2021 00:00:00 +0000</pubDate>
-            <guid>
-                https://wildfly-security.github.io/wildfly-elytron/blog/galleon-cli-keycloak/
-            </guid>
-        </item>
-        
-        <item>
-            <title>Using hash character sets and encodings in Elytron</title>
-            <link>
-                https://wildfly-security.github.io/wildfly-elytron/blog/hash-charsets-encodings/
-            </link>
-            <description>
-                In the legacy security configuration using PicketBox, the UsernamePasswordLoginModule supports storing hashed passwords by specifying the hashing algorithm, encoding and character set to compare the client-supplied password to the password stored in the management system. Previously, Elytron supported specifying the hashing algorithm, but not the string encoding or character set...
-            </description>
-            <pubDate>Thu, 24 Jun 2021 00:00:00 +0000</pubDate>
-            <guid>
-                https://wildfly-security.github.io/wildfly-elytron/blog/hash-charsets-encodings/
-            </guid>
-        </item>
-        
-        <item>
-            <title>SSLv2Hello with WildFly</title>
-            <link>
-                https://wildfly-security.github.io/wildfly-elytron/blog/oneway-sslv2hello/
-            </link>
-            <description>
-                It is now possible to use SSLv2Hello with WildFly. This blog post will give an introduction to this new feature, but it will assume previous knowledge on how to configure SSL in Elytron. For more information on how to configure SSL, refer to the elytron documentation. An Overview of SSLv2Hello...
-            </description>
-            <pubDate>Mon, 21 Jun 2021 00:00:00 +0000</pubDate>
-            <guid>
-                https://wildfly-security.github.io/wildfly-elytron/blog/oneway-sslv2hello/
-            </guid>
-        </item>
-        
-        <item>
-            <title>SSL Certificate Revocation Lists with WildFly</title>
-            <link>
-                https://wildfly-security.github.io/wildfly-elytron/blog/ssl-certificate-revocation-list/
-            </link>
-            <description>
-                An Overview of Certificate Revocation Lists Configuring CRLs on the Client Side Back Up Your Standalone Server Configuration Pre-requisite Server Configuration Pre-requisite Client Configuration Configure the Server Create the Certificate Revocation Lists Configure a Client that verifies certificates against CRLs Build and Deploy the Application Run the Client and Verify...
-            </description>
-            <pubDate>Fri, 18 Jun 2021 00:00:00 +0000</pubDate>
-            <guid>
-                https://wildfly-security.github.io/wildfly-elytron/blog/ssl-certificate-revocation-list/
-            </guid>
-        </item>
-        
-        <item>
-            <title>Secure WildFly CLI with Keycloak</title>
-            <link>
-                https://wildfly-security.github.io/wildfly-elytron/blog/secure-wildfly-cli-with-keycloak/
-            </link>
-            <description>
-                This blog post gives an example of how to secure WildFly CLI using Keycloak and Elytron. Keycloak&#8217;s Wildfly Elytron Adapter Download WildFly server, Keycloak server and the WildFly OpenID Connect client adapter for WildFly from keycloak.org. Make sure your versions are compatible. Then, extract the contents of the client adapter...
-            </description>
-            <pubDate>Tue, 15 Jun 2021 00:00:00 +0000</pubDate>
-            <guid>
-                https://wildfly-security.github.io/wildfly-elytron/blog/secure-wildfly-cli-with-keycloak/
             </guid>
         </item>
         
