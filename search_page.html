@@ -1,0 +1,46 @@
+---
+layout: default
+---
+
+
+<div class="blog-page grid-wrapper">
+    <div class="grid__item width-2-12 align-self-center"></div>
+    <div class="grid__item width-8-12">
+        <input class="mdl-textfield__input" id="search-input" type="text">
+        <label class="mdl-textfield__label" for="search-input">Search Term...</label>
+    </div>
+    <div class="grid__item width-2-12 align-self-center"></div>
+
+    <div class="grid__item width-2-12 align-self-center"></div>
+    <div class="grid__item width-8-12 width-12-12-m">
+        <div class="mdl-textfield mdl-js-textfield search-container">
+            <ul id="results-container"></ul>
+          </div>
+    </div>
+    <div class="grid__item width-2-12 align-self-center"></div>
+</div>
+<!-- Html Elements for Search -->
+<!-- <form>
+    <div class="mdl-textfield mdl-js-textfield search-container">
+      <input class="mdl-textfield__input" id="search-input" type="text">
+      <label class="mdl-textfield__label" for="search-input">Search Term...</label>
+      <ul id="results-container"></ul>
+    </div>
+  </form> -->
+
+<!-- <div id="search-container">
+    <input type="text" id="search-input" placeholder="search...">
+    <ul id="results-container"></ul>
+</div> -->
+
+<!-- Script pointing to search-script.js -->
+<script src="{{ site.baseurl }}/js/search.js"></script>
+
+<!-- Configuration -->
+<script>
+    SimpleJekyllSearch({
+        searchInput: document.getElementById('search-input'),
+        resultsContainer: document.getElementById('results-container'),
+        json: 'search.json'
+    })
+</script>
