@@ -184,8 +184,6 @@ td.content > .title, .audioblock > .title, .exampleblock > .title, .imageblock >
 
 .quoteblock blockquote::after { content: ""; }
 
-.search-label { color: hotpink; }
-
 .grid-wrapper { display: grid; grid-template-columns: repeat(12, 1fr); grid-gap: 1em; clear: both; }
 
 .width-2-12 { grid-column: span 2; }
@@ -222,7 +220,7 @@ body.post div.post-page .note, body.post div.post-page .colist { overflow: auto;
 
 .blog-page .blog-list-item p.byline { font-size: 1.3em; }
 
-.blog-page .blog-list-item .tags { font-size: 1em; color: #0D1C2C; }
+.blog-page .blog-list-item .tags { font-size: 1em; }
 
 .blog-page .blog-list-item .post-title a { font-size: 1.8rem; text-decoration: none; }
 
