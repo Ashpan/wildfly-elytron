@@ -337,7 +337,13 @@ our security domain, add the <code>PLAIN</code> authentication mechanism and upd
 <p>This login process demonstrates that the encryption and integrity is working correctly.</p>
 </div>
 <div class="paragraph">
-<p>In order to further verify that these features are being used correct we can navigate to the identity file and check the contents. The file should be located at <code>WILDFLY_HOME/standalone/configuration/fs-realm/O/F/OF2WSY3LON2GC4TUKVZWK4Q.xml</code> if the same filesystem realm and identity configuration was used. Here we can see the format for the password is <code>enc_base64</code> specifying that the credentials are encrypted. The attributes should also be stored encrypted instead of plain text. To verify that the integrity is enabled and working correctly there should be a <code>&lt;signature&gt;</code> before the closing <code>&lt;/identity&gt;</code> tag that is used to verify filesystem integrity everytime data is written to and read from the filesystem.</p>
+<p>In order to further verify that these features are being used correct we can navigate to the identity file and check the contents. The file should be located at <code>WILDFLY_HOME/standalone/configuration/fs-realm/O/F/OF2WSY3LON2GC4TUKVZWK4Q.xml</code> if the same filesystem realm and identity configuration was used.</p>
+</div>
+<div class="paragraph">
+<p>Here we can see the format for the password is <code>enc_base64</code> specifying that the credentials are encrypted. The attributes should also be stored encrypted instead of plain text.</p>
+</div>
+<div class="paragraph">
+<p>To verify that the integrity is enabled and working correctly there should be a <code>&lt;Signature&gt;</code> before the closing <code>&lt;/identity&gt;</code> tag that is used to verify filesystem integrity everytime data is written to and read from the filesystem.</p>
 </div>
 <div class="listingblock">
 <div class="content">
