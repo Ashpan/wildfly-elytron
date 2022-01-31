@@ -282,29 +282,16 @@ FileSystem realm and role-decoder to it.
 </table>
 </div>
 <div class="paragraph">
-<p>We then add our security domain mapping to the EJB3 subsystem, update the <code>sasl-authentication-factory</code> to use
+<p>We then add our security domain mapping to the Undertow subsystem, update the <code>sasl-authentication-factory</code> to use
 our security domain, add the <code>PLAIN</code> authentication mechanism and update the <code>http-remoting-connector</code> to use our <code>sasl-authentication-factory</code>:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlightjs highlight"><code class="language-none hljs">/subsystem=ejb3/application-security-domain=other:write-attribute(name=security-domain, value=fsDomain)
+<pre class="highlightjs highlight"><code class="language-none hljs">/subsystem=undertow/application-security-domain=other:write-attribute(name=security-domain, value=fsDomain)
 /subsystem=elytron/sasl-authentication-factory=application-sasl-authentication:write-attribute(name=security-domain, value=fsDomain)
 /subsystem=elytron/sasl-authentication-factory=application-sasl-authentication:list-add(name=mechanism-configurations, value={mechanism-name=PLAIN})
 /subsystem=remoting/http-connector=http-remoting-connector:write-attribute(name=sasl-authentication-factory,value=application-sasl-authentication)</code></pre>
 </div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-We add the PLAIN authentication mechanism as it is important that the server receives the
-password in clear-text. We could alternatively use HTTP BASIC.
-</td>
-</tr>
-</table>
 </div>
 </div>
 </div>
@@ -328,6 +315,44 @@ password in clear-text. We could alternatively use HTTP BASIC.
                 ...
             &lt;/configuration&gt;
 &lt;/authentication-configurations&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="verifying-encryption-and-integrity"><a class="anchor" href="#verifying-encryption-and-integrity"></a>Verifying Encryption and Integrity</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>From the root directory of the <strong><a href="https://github.com/wildfly-security-incubator/elytron-examples/blob/master/encryption-integrity-filesystem-realm/">quickstart example</a></strong> run the following command the deploy the web application to wildfly</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">mvn clean install wildfly:deploy</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now you may navigate to <code><a href="http://localhost:8080/encryption-integrity-filesystem" class="bare">http://localhost:8080/encryption-integrity-filesystem</a></code>, and when it prompt&#8217;s you to enter a username and password, put in the credentials we specified earlier, <code>quickstartUser</code>, and <code>password123!</code>. This should authenticate you to a page that shows you the principal you&#8217;re logged in with.</p>
+</div>
+<div class="paragraph">
+<p>This login process demonstrates that the encryption and integrity is working correctly.</p>
+</div>
+<div class="paragraph">
+<p>In order to further verify that these features are being used correct we can navigate to the identity file and check the contents. The file should be located at <code>WILDFLY_HOME/standalone/configuration/fs-realm/O/F/OF2WSY3LON2GC4TUKVZWK4Q.xml</code> if the same filesystem realm and identity configuration was used. Here we can see the format for the password is <code>enc_base64</code> specifying that the credentials are encrypted. The attributes should also be stored encrypted instead of plain text. To verify that the integrity is enabled and working correctly there should be a <code>&lt;signature&gt;</code> before the closing <code>&lt;/identity&gt;</code> tag that is used to verify filesystem integrity everytime data is written to and read from the filesystem.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-xml hljs" data-lang="xml">&lt;?xml version="1.0" encoding="UTF-8" standalone="no"?&gt;&lt;identity xmlns="urn:elytron:identity:1.1"&gt;
+    &lt;credentials&gt;
+        &lt;password algorithm="digest-md5" format="enc_base64"&gt;RUxZAUMQ+XRUtF01jUkZo3ASjKbLIbiTqqb0pSHVzrzuGo8hrF6B9hJYoief6JagHcJ62i38jLe4wKAVnUBUVccsDGllNA==&lt;/password&gt;
+    &lt;/credentials&gt;
+    &lt;attributes&gt;
+        &lt;attribute name="RUxZAUMQCVeEg3MGA+SCRr+ybL6Z2/7UKRy0SLKSYfB8M3A3C+w=" value="RUxZAUMQmmgjsZiYAfVI+vioN490vNYd+UKza11Y8uDorAx3Dhk="/&gt;
+        &lt;attribute name="RUxZAUMQVY62G5cdrSuhimEH0plG/TOBABHShx7ZhXJxkI9LZZU=" value="RUxZAUMQRMWfMc9n8GAQPZ4iQiFQu6geVX4H9RLGqGvEl0egay0="/&gt;
+    &lt;/attributes&gt;&lt;Signature xmlns="http://www.w3.org/2000/09/xmldsig#"&gt;&lt;SignedInfo&gt;&lt;CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/&gt;&lt;SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/&gt;&lt;Reference URI=""&gt;&lt;Transforms&gt;&lt;Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/&gt;&lt;/Transforms&gt;&lt;DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/&gt;&lt;DigestValue&gt;7OLMOYNgYif3bw+KBFPOWimwBvdf4OwC5YWCkztYrZE=&lt;/DigestValue&gt;&lt;/Reference&gt;&lt;/SignedInfo&gt;&lt;SignatureValue&gt;fpjVGJ3szAU+gueNv2mcolYtL62+hjyOnnR18bd9WtCmi7tYuAYwFhaZ2k7qY8zxZbAmRrxXcL1o&amp;#13;
+Tn3Qe+5VJY0wtTDduGgO11vZL9JjYyFXDZvqI7DGhbVKcchD4BRtnJ01VkOfN6jyxbNtrtd+vwQD&amp;#13;
+oGqpnVXiQ3Ge1Q2Xk9E=&lt;/SignatureValue&gt;&lt;KeyInfo&gt;&lt;KeyValue&gt;&lt;RSAKeyValue&gt;&lt;Modulus&gt;p/qauU5HgFXeYzAbTdieDzaUj+qgYYWFKMSfDeLt6KqKL1Ruac9lU994pblwwnWXeR4hn8sPeCUs&amp;#13;
+aZoqagmuDFSrPRlwUI0ij9aermeCzTq8ZEpjqHO5n8IWJzptITuqY6OJ58LoAK4GvcqsSBof98Oz&amp;#13;
+efxB3EUXrAI7OQbcko0=&lt;/Modulus&gt;&lt;Exponent&gt;AQAB&lt;/Exponent&gt;&lt;/RSAKeyValue&gt;&lt;/KeyValue&gt;&lt;/KeyInfo&gt;&lt;/Signature&gt;&lt;/identity&gt;</code></pre>
 </div>
 </div>
 </div>
