@@ -5,7 +5,7 @@
         <title>WildFly Elytron</title>
         <link>https://wildfly-security.github.io/wildfly-elytron</link>
         <description></description>
-        <lastBuildDate>Mon, 31 Jan 2022 20:49:09 +0000</lastBuildDate>
+        <lastBuildDate>Tue, 01 Feb 2022 15:18:22 +0000</lastBuildDate>
         
         <item>
             <title>Encrypting Filesystem realms and enabling integrity</title>
@@ -13,7 +13,7 @@
                 https://wildfly-security.github.io/wildfly-elytron/blog/filesystem-encryption-integrity/
             </link>
             <description>
-                Previously, any data in the filesystem realm was always stored unencrypted and data was not verified. This meant that anyone with access to the filesystem identity files could access the credentials, and attributes (such as assigned roles). Along with that if anyone were to change the data in file, the...
+                Previously, any data in the filesystem realm was always stored unencrypted and data was not verified. This meant that anyone with access to the filesystem identity files could access the credentials, and attributes (such as assigned roles). Along with that if anyone were to tamper with the data in file,...
             </description>
             <pubDate>Fri, 28 Jan 2022 00:00:00 +0000</pubDate>
             <guid>
