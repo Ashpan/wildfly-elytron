@@ -5,7 +5,21 @@
         <title>WildFly Elytron</title>
         <link>https://wildfly-security.github.io/wildfly-elytron</link>
         <description></description>
-        <lastBuildDate>Tue, 01 Feb 2022 15:18:22 +0000</lastBuildDate>
+        <lastBuildDate>Tue, 01 Feb 2022 22:06:28 +0000</lastBuildDate>
+        
+        <item>
+            <title>Encrypting a Pre-Existing Filesystem realms</title>
+            <link>
+                https://wildfly-security.github.io/wildfly-elytron/blog/filesystem-encryption-tool/
+            </link>
+            <description>
+                Overview With the addition of the filesystem realm encryption feature outlined here, a feature was added to the Elytron Tool to encrypt a pre-existing filesystem realm. Method to run the tool There are two methods to run the tool, one is on the command line, that only lets you apply...
+            </description>
+            <pubDate>Tue, 01 Feb 2022 00:00:00 +0000</pubDate>
+            <guid>
+                https://wildfly-security.github.io/wildfly-elytron/blog/filesystem-encryption-tool/
+            </guid>
+        </item>
         
         <item>
             <title>Encrypting Filesystem realms and enabling integrity</title>
@@ -15,7 +29,7 @@
             <description>
                 Previously, any data in the filesystem realm was always stored unencrypted and data was not verified. This meant that anyone with access to the filesystem identity files could access the credentials, and attributes (such as assigned roles). Along with that if anyone were to tamper with the data in file,...
             </description>
-            <pubDate>Fri, 28 Jan 2022 00:00:00 +0000</pubDate>
+            <pubDate>Tue, 01 Feb 2022 00:00:00 +0000</pubDate>
             <guid>
                 https://wildfly-security.github.io/wildfly-elytron/blog/filesystem-encryption-integrity/
             </guid>
@@ -130,20 +144,6 @@
             <pubDate>Thu, 21 Oct 2021 00:00:00 +0000</pubDate>
             <guid>
                 https://wildfly-security.github.io/wildfly-elytron/blog/distributed-realm/
-            </guid>
-        </item>
-        
-        <item>
-            <title>Open Source Day 2021 Recap</title>
-            <link>
-                https://wildfly-security.github.io/wildfly-elytron/blog/open-source-day-recap/
-            </link>
-            <description>
-                A couple weeks ago, the WildFly Elytron team had a great time participating in Open Source Day, an all-day hackathon that took place during the virtual Grace Hopper Celebration (vGHC). This was the WildFly Elytron team&#8217;s second time participating in this event, after having been a part of the recent...
-            </description>
-            <pubDate>Mon, 18 Oct 2021 00:00:00 +0000</pubDate>
-            <guid>
-                https://wildfly-security.github.io/wildfly-elytron/blog/open-source-day-recap/
             </guid>
         </item>
         
