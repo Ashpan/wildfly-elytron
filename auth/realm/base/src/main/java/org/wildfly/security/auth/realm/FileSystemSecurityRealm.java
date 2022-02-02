@@ -27,9 +27,11 @@ import static javax.xml.stream.XMLStreamConstants.START_ELEMENT;
 import static org.wildfly.security.provider.util.ProviderUtil.INSTALLED_PROVIDERS;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,6 +48,7 @@ import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyException;
 import java.security.KeyFactory;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.security.PrivateKey;
@@ -71,6 +74,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
@@ -142,6 +146,7 @@ import org.wildfly.security.password.spec.OneTimePasswordSpec;
 import org.wildfly.security.password.spec.PasswordSpec;
 import org.wildfly.security.password.util.ModularCrypt;
 import org.wildfly.security.permission.ElytronPermission;
+import org.xml.sax.SAXException;
 
 /**
  * A simple filesystem-backed security realm.
@@ -200,7 +205,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
     private final SecretKey secretKey;
     private final PrivateKey privateKey;
     private final PublicKey publicKey;
-
+    private final File mainIndex;
     private final ConcurrentHashMap<String, IdentitySharedExclusiveLock> realmIdentityLocks = new ConcurrentHashMap<>();
 
     /**
@@ -238,9 +243,9 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
         this.hashEncoding = hashEncoding != null ? hashEncoding : Encoding.BASE64;
         this.providers = providers != null ? providers : INSTALLED_PROVIDERS;
         this.secretKey = secretKey;
-        this.privateKey = publicKey != null ? privateKey : null;
-        this.publicKey = privateKey != null ? publicKey : null;
-        // last 2 lines are to make sure both private key and public key have values, if not then both are set to null
+        this.privateKey = privateKey;
+        this.publicKey = publicKey;
+        this.mainIndex = new File(root.toString(),"main_index");
     }
 
     /**
@@ -424,7 +429,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
         } else {
             lock = realmIdentityLock.lockShared();
         }
-        return new Identity(finalName, pathFor(finalName), lock, hashCharset, hashEncoding, providers, secretKey, privateKey, publicKey);
+        return new Identity(finalName, pathFor(finalName), lock, hashCharset, hashEncoding, providers, secretKey, privateKey, publicKey, mainIndex);
     }
 
     public ModifiableRealmIdentityIterator getRealmIdentityIterator() throws RealmUnavailableException {
@@ -568,8 +573,9 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
         private final SecretKey secretKey;
         private final PrivateKey privateKey;
         private final PublicKey publicKey;
+        private final File mainIndex;
 
-        Identity(final String name, final Path path, final IdentityLock lock, final Charset hashCharset, final Encoding hashEncoding, Supplier<Provider[]> providers, final SecretKey secretKey, final PrivateKey privateKey, final PublicKey publicKey) {
+        Identity(final String name, final Path path, final IdentityLock lock, final Charset hashCharset, final Encoding hashEncoding, Supplier<Provider[]> providers, final SecretKey secretKey, final PrivateKey privateKey, final PublicKey publicKey, final File mainIndex) {
             this.name = name;
             this.path = path;
             this.lock = lock;
@@ -579,6 +585,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
             this.secretKey = secretKey;
             this.privateKey = privateKey;
             this.publicKey = publicKey;
+            this.mainIndex = mainIndex;
         }
 
         public Principal getRealmIdentityPrincipal() {
@@ -656,6 +663,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
         }
 
         List<Credential> loadCredentials() throws RealmUnavailableException {
+            verifyIntegrity();
             final LoadedIdentity loadedIdentity = loadIdentity(false, true);
             return loadedIdentity == null ? Collections.emptyList() : loadedIdentity.getCredentials();
         }
@@ -670,6 +678,13 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
         public void delete() throws RealmUnavailableException {
             if (System.getSecurityManager() == null) {
                 deletePrivileged();
+                try {
+                    if(publicKey != null) {
+                        deleteMainIndexEntry(mainIndex, path);
+                    }
+                } catch (IOException e) {
+                    throw ElytronMessages.log.unableToAccessMainIndex(mainIndex.toString());
+                }
                 return;
             }
             try {
@@ -722,8 +737,11 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                 if(privateKey != null) {
                     try {
                         createDigitalSignature(path.toString(), this.name);
+                        writeToMainIndex(this.mainIndex, this.path, this.secretKey);
                     } catch (IllegalStateException e) {
                         throw ElytronMessages.log.unableToGenerateSignature(path.toString());
+                    } catch (IOException | GeneralSecurityException e) {
+                        throw ElytronMessages.log.unableToAccessMainIndex(this.mainIndex.toString());
                     }
                     if ( this.publicKey != null && ! validateDigitalSignature(this.path.toString(), this.name)) {
                         throw ElytronMessages.log.invalidIdentitySignature(this.name);
@@ -831,9 +849,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
         }
 
         private Void replaceIdentityPrivileged(final LoadedIdentity newIdentity) throws RealmUnavailableException {
-            if ( this.publicKey != null && ! validateDigitalSignature(this.path.toString(), this.name)) {
-                throw ElytronMessages.log.invalidIdentitySignature(this.name);
-            }
+            verifyIntegrity();
             for (;;) {
                 final Path tempPath = tempPath();
                 try {
@@ -879,9 +895,14 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                     } catch (IOException ignored) {
                         // nothing we can do
                     }
-                    if ( this.publicKey != null ) { createDigitalSignature(this.path.toString(), this.name); }
-                    if ( this.publicKey != null && ! validateDigitalSignature(this.path.toString(), this.name)) {
-                        throw ElytronMessages.log.invalidIdentitySignature(this.name);
+
+                    try {
+                        if (this.publicKey != null) {
+                            createDigitalSignature(this.path.toString(), this.name);
+                            updateMainIndex(this.mainIndex, this.path, this.secretKey);
+                        }
+                    } catch (GeneralSecurityException | IOException e) {
+                        throw ElytronMessages.log.unableToAccessMainIndex(this.path.toString());
                     }
                     return null;
                 } catch (Throwable t) {
@@ -909,7 +930,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
             return Version.VERSION_1_0;
         }
 
-        private void writeIdentity(final XMLStreamWriter streamWriter, final LoadedIdentity newIdentity) throws XMLStreamException, InvalidKeySpecException, NoSuchAlgorithmException, GeneralSecurityException {
+        private void writeIdentity(final XMLStreamWriter streamWriter, final LoadedIdentity newIdentity) throws XMLStreamException, GeneralSecurityException {
             streamWriter.writeStartDocument();
             streamWriter.writeCharacters("\n");
             streamWriter.writeStartElement("identity");
@@ -1015,9 +1036,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
         }
 
         protected LoadedIdentity loadIdentityPrivileged(final boolean skipCredentials, final boolean skipAttributes) throws RealmUnavailableException {
-            if ( this.publicKey != null && ! validateDigitalSignature(this.path.toString(), this.name)) {
-                throw ElytronMessages.log.invalidIdentitySignature(this.name);
-            }
+            verifyIntegrity();
             try (InputStream inputStream = Files.newInputStream(path, READ)) {
                 final XMLInputFactory inputFactory = XMLInputFactory.newFactory();
                 inputFactory.setProperty(XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
@@ -1027,11 +1046,12 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                 try (final AutoCloseableXMLStreamReaderHolder holder = new AutoCloseableXMLStreamReaderHolder(inputFactory.createXMLStreamReader(inputStream, "UTF-8"))) {
                     final XMLStreamReader streamReader = holder.getXmlStreamReader();
                     LoadedIdentity parsedIdentity = parseIdentity(streamReader, skipCredentials, skipAttributes);
-                    if (this.publicKey != null) { createDigitalSignature(this.path.toString(), this.name); }
                     return parsedIdentity;
 
                 } catch (XMLStreamException e) {
                     throw ElytronMessages.log.fileSystemRealmFailedToRead(path, name, e);
+//                } catch (GeneralSecurityException e) {
+//                    throw ElytronMessages.log.unableToAccessMainIndex(this.path.toString());
                 }
             } catch (NoSuchFileException | FileNotFoundException ignored) {
                 return null;
@@ -1360,6 +1380,26 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
             }
         }
 
+        private void verifyIntegrity() {
+            if (this.publicKey != null) {
+                boolean checksumValidity;
+                try {
+                    checksumValidity = validateChecksum(this.mainIndex, this.path, this.secretKey);
+                } catch (IllegalStateException | IOException | GeneralSecurityException e) {
+                    throw ElytronMessages.log.unableToAccessMainIndex(this.mainIndex.toString());
+                }
+                if (!checksumValidity) {
+                    if (!validateDigitalSignature(this.path.toString(), this.name)) {
+                        throw ElytronMessages.log.invalidIdentitySignature(this.name);
+                    }
+                }
+            }
+        }
+
+        // Process for updating identity:
+        // 1. Validate current identity digital signature
+        // 2. Update identity with new data
+        // 3. Create new digital signature
         private boolean validateDigitalSignature(String path, String name) throws IllegalStateException {
             try {
                 DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -1429,10 +1469,115 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                 ElytronMessages.log.tracef("FileSystemSecurityRealm - signature against file updated [%s]", name);
                 writer.close();
 
-           } catch (ParserConfigurationException | IOException | NoSuchAlgorithmException | InvalidAlgorithmParameterException |
-                    KeyException | XMLSignatureException | MarshalException | TransformerException | org.xml.sax.SAXException e) {
+            } catch (ParserConfigurationException | IOException | NoSuchAlgorithmException | InvalidAlgorithmParameterException |
+                    KeyException | XMLSignatureException | MarshalException | TransformerException | SAXException e) {
                 throw ElytronMessages.log.unableToGenerateSignature(path);
             }
+        }
+
+        private static void writeToMainIndex(File mainIndex, Path path, SecretKey secretKey) throws IOException, GeneralSecurityException {
+            FileWriter mainIndexWriter = new FileWriter(mainIndex, true);
+            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+            String checksum = getChecksum(messageDigest, new File(path.toString()));
+            String identityFilename = path.getFileName().toString();
+            if(secretKey != null) {
+                checksum = CipherUtil.encrypt(checksum, secretKey);
+                identityFilename = CipherUtil.encrypt(identityFilename, secretKey);
+            }
+            mainIndexWriter.append(identityFilename).append(":").append(checksum).append('\n');
+            mainIndexWriter.close();
+        }
+
+        private static void updateMainIndex(File mainIndex, Path path, SecretKey secretKey) throws IOException, GeneralSecurityException {
+            BufferedReader reader = new BufferedReader(new FileReader(mainIndex));
+            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+            String checksum = getChecksum(messageDigest, new File(path.toString()));
+            String identityFilename = path.getFileName().toString();
+            String line;
+            ArrayList<String> fileContents = new ArrayList<String>();
+            while((line = reader.readLine()) != null) {
+                fileContents.add(line);
+            }
+            reader.close();
+
+            for (int i = 0; i < fileContents.size(); i++) {
+                String currentIdentity = fileContents.get(i).split(":")[0];
+                if (secretKey != null) {
+                    currentIdentity = CipherUtil.decrypt(currentIdentity, secretKey);
+                    checksum = CipherUtil.encrypt(checksum, secretKey);
+                }
+                if (currentIdentity.equals(identityFilename)) {
+                    fileContents.set(i, fileContents.get(i).split(":")[0] + ":" + checksum);
+                    break;
+                }
+            }
+            FileWriter writer = new FileWriter(mainIndex);
+            writer.write(String.join("\n", fileContents));
+            writer.close();
+        }
+
+        private static boolean validateChecksum(File mainIndex, Path path, SecretKey secretKey) throws IOException, GeneralSecurityException {
+            try {
+                Scanner mainIndexScanner = new Scanner(mainIndex);
+                MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+                String currentFileChecksum = getChecksum(messageDigest, new File(path.toString()));
+                String identityFilename = path.getFileName().toString();
+                String data, mainIndexFilename, mainIndexChecksum;
+                while (mainIndexScanner.hasNextLine()) {
+                    data = mainIndexScanner.nextLine();
+                    mainIndexFilename = data.split(":")[0];
+                    mainIndexChecksum = data.split(":")[1];
+                    if(secretKey != null) {
+                        mainIndexFilename = CipherUtil.decrypt(mainIndexFilename, secretKey);
+                        mainIndexChecksum = CipherUtil.decrypt(mainIndexChecksum, secretKey);
+                    }
+                    if(mainIndexFilename.equals(identityFilename)) {
+                        mainIndexScanner.close();
+                        return mainIndexChecksum.equals(currentFileChecksum);
+                    }
+                }
+                mainIndexScanner.close();
+            } catch (FileNotFoundException e) {
+                throw ElytronMessages.log.unableToAccessMainIndex(path.toString());
+            }
+            return false;
+        }
+
+        private static void deleteMainIndexEntry(File mainIndex, Path path) throws IOException {
+            BufferedReader reader = new BufferedReader(new FileReader(mainIndex));
+            String line;
+            StringBuilder fileContents = new StringBuilder();
+            while((line = reader.readLine()) != null) {
+                fileContents.append(line).append("\r\n");
+            }
+            reader.close();
+            int beginningIndex = fileContents.indexOf(path.getFileName().toString());
+            int endIndex = fileContents.indexOf("\n", beginningIndex);
+            fileContents.delete(beginningIndex, endIndex+"\n".length());
+            FileWriter writer = new FileWriter(mainIndex);
+            writer.write(fileContents.toString());
+            writer.close();
+        }
+
+        private static String getChecksum(MessageDigest digest, File file) throws IOException {
+            FileInputStream fileInputStream = new FileInputStream(file);
+            // Create byte array to read data in chunks
+            byte[] byteArray = new byte[1024];
+            int bytesCount = 0;
+            while ((bytesCount = fileInputStream.read(byteArray)) != -1) {
+                digest.update(byteArray, 0, bytesCount);
+            }
+            // close the input stream
+            fileInputStream.close();
+            // store the bytes returned by the digest() method
+            byte[] bytes = digest.digest();
+
+            StringBuilder stringBuilder = new StringBuilder();
+            for (byte eachByte : bytes) {
+                // converts the decimal into hexadecimal format
+                stringBuilder.append(Integer.toString((eachByte & 0xff) + 0x100, 16).substring(1));
+            }
+            return stringBuilder.toString();
         }
     }
 

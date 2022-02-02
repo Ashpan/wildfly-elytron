@@ -159,4 +159,15 @@ interface ElytronMessages extends BasicLogger {
     @Message(id = 13008, value = "Unable to create a signature for the file: %s.")
     IllegalStateException unableToGenerateSignature(String s);
 
+    @Message(id = 13009, value = "Unable to locate the signature element for the file: %s")
+    RealmUnavailableException cannotFindSignature(String s);
+
+    @Message(id = 13010, value = "Both PrivateKey and PublicKey must be defined for realm at: %s")
+    IllegalArgumentException invalidKeyPairArgument(String s);
+
+    @Message(id = 13011, value = "Unable to access master index file: %s")
+    IllegalStateException unableToAccessMainIndex(String s);
+
+
+
 }
