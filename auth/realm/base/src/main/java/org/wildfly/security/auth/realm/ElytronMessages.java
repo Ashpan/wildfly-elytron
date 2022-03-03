@@ -147,9 +147,9 @@ interface ElytronMessages extends BasicLogger {
     @Message(id = 13004, value = "JAAS logout failed for principal %s")
     void debugInfoJaasLogoutFailure(Principal principal, @Cause Throwable cause);
 
-    @Message(id = 13005, value = "Filesystem-backed realm unable to decrypt identity.")
+    @Message(id = 13005, value = "Filesystem-backed realm unable to decrypt identity")
     RealmUnavailableException fileSystemRealmDecryptionFailed(@Cause Throwable cause);
 
-    @Message(id = 13006, value = "Filesystem-backed realm unable to encrypt identity.")
+    @Message(id = 13006, value = "Filesystem-backed realm unable to encrypt identity")
     RealmUnavailableException fileSystemRealmEncryptionFailed(@Cause Throwable cause);
 }

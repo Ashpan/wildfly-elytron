@@ -940,7 +940,7 @@ public class FileSystemSecurityRealmTest {
         try {
             existingIdentity.verifyEvidence(new PasswordGuessEvidence(actualPassword));
         } catch (Exception e) {
-            assertEquals("ELY13005: Filesystem-backed realm unable to decrypt identity.", e.getCause().getMessage());
+            assertEquals("ELY13005: Filesystem-backed realm unable to decrypt identity", e.getCause().getMessage());
         }
         existingIdentity.dispose();
     }
