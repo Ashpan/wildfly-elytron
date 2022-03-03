@@ -787,8 +787,10 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                     try (OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(tempPath, WRITE, CREATE_NEW, DSYNC))) {
                         try (AutoCloseableXMLStreamWriterHolder holder = new AutoCloseableXMLStreamWriterHolder(xmlOutputFactory.createXMLStreamWriter(outputStream))) {
                             writeIdentity(holder.getXmlStreamWriter(), newIdentity);
-                        } catch (XMLStreamException | GeneralSecurityException e) {
+                        } catch (XMLStreamException | InvalidKeySpecException | NoSuchAlgorithmException | CertificateEncodingException e) {
                             throw ElytronMessages.log.fileSystemRealmFailedToWrite(tempPath, name, e);
+                        } catch (GeneralSecurityException e) {
+                            throw ElytronMessages.log.fileSystemRealmEncryptionFailed(e);
                         }
                     } catch (FileAlreadyExistsException ignored) {
                         // try a new name
@@ -1127,7 +1129,12 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                         }
                         PasswordFactory passwordFactory = PasswordFactory.getInstance(algorithm, providers);
                         byte[] encryptedPasswordBytes = CodePointIterator.ofChars(text.toCharArray()).base64Decode().drain();
-                        byte[] decryptedPasswordBytes = CipherUtil.decrypt(encryptedPasswordBytes, secretKey);
+                        byte[] decryptedPasswordBytes;
+                        try {
+                            decryptedPasswordBytes = CipherUtil.decrypt(encryptedPasswordBytes, secretKey);
+                        } catch (GeneralSecurityException e) {
+                            throw ElytronMessages.log.fileSystemRealmDecryptionFailed(e);
+                        }
                         PasswordSpec passwordSpec = BasicPasswordSpecEncoding.decode(decryptedPasswordBytes);
 
                         if (passwordSpec != null) {
@@ -1158,7 +1165,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                     } else {
                         throw ElytronMessages.log.fileSystemRealmInvalidPasswordFormat(format, path, streamReader.getLocation().getLineNumber(), name);
                     }
-                } catch (GeneralSecurityException e) {
+                } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
                     throw ElytronMessages.log.fileSystemRealmInvalidContent(path, streamReader.getLocation().getLineNumber(), name);
                 }
             });
@@ -1259,15 +1266,15 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
             if (value == null) {
                 throw ElytronMessages.log.fileSystemRealmMissingAttribute("value", path, streamReader.getLocation().getLineNumber(), this.name);
             }
-            try {
                 if (secretKey != null) {
-                    attributes.addLast(CipherUtil.decrypt(name, secretKey), CipherUtil.decrypt(value, secretKey));
+                    try {
+                        attributes.addLast(CipherUtil.decrypt(name, secretKey), CipherUtil.decrypt(value, secretKey));
+                    } catch (GeneralSecurityException e){
+                        throw ElytronMessages.log.fileSystemRealmDecryptionFailed(e);
+                    }
                 } else {
                     attributes.addLast(name, value);
                 }
-            } catch (GeneralSecurityException e) {
-                throw ElytronMessages.log.fileSystemRealmInvalidContent(path, streamReader.getLocation().getLineNumber(), this.name);
-            }
             if (streamReader.nextTag() != END_ELEMENT) {
                 throw ElytronMessages.log.fileSystemRealmInvalidContent(path, streamReader.getLocation().getLineNumber(), this.name);
             }

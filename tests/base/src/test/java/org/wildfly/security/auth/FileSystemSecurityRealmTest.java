@@ -915,7 +915,7 @@ public class FileSystemSecurityRealmTest {
         getRootPath(); // will fail on windows if iterator not closed correctly
     }
 
-    @Test(expected = RealmUnavailableException.class)
+    @Test
     public void testMismatchSecretKey() throws Exception {
         char[] actualPassword = "secretPassword".toCharArray();
         PasswordFactory factory = PasswordFactory.getInstance(ClearPassword.ALGORITHM_CLEAR);
