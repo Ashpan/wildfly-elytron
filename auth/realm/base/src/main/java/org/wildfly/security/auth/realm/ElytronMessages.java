@@ -130,6 +130,10 @@ interface ElytronMessages extends BasicLogger {
     @Message(id = 1154, value = "Failed to read key store")
     RealmUnavailableException failedToReadKeyStore(@Cause KeyStoreException e);
 
+    @Message(id = 13005, value = "Filesystem-backed realm encountered invalid SecretKey")
+    RealmUnavailableException fileSystemRealmInvalidSecretKey(@Cause Exception e);
+
+
     @Message(id = 11005, value = "Invalid unicode endoding, offending sequence: %s.")
     IOException invalidUnicodeSequence(String s, @Cause NoSuchElementException nsee);
 

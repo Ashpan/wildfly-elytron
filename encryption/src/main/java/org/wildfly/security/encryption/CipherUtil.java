@@ -27,7 +27,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.spec.AlgorithmParameterSpec;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 
@@ -126,8 +128,13 @@ public class CipherUtil {
         Cipher cipher = Cipher.getInstance(TRANSFORMATION);
         AlgorithmParameterSpec spec = new IvParameterSpec(iv);
         cipher.init(Cipher.DECRYPT_MODE, secretKey, spec);
-
-        return cipher.doFinal(cipherText);
+        byte[] decryptedBytes;
+        try {
+            decryptedBytes = cipher.doFinal(cipherText);
+        } catch (IllegalBlockSizeException | BadPaddingException e) {
+            throw log.invalidSecretKey();
+        }
+        return decryptedBytes;
     }
 
 }

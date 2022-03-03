@@ -36,6 +36,7 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.ArrayList;
@@ -55,7 +56,7 @@ import org.wildfly.security.auth.realm.FileSystemSecurityRealm;
 import org.wildfly.security.auth.server.ModifiableRealmIdentity;
 import org.wildfly.security.auth.server.ModifiableRealmIdentityIterator;
 import org.wildfly.security.auth.server.NameRewriter;
-import org.wildfly.security.auth.server.RealmUnavailableException;
+//import org.wildfly.security.auth.server.RealmUnavailableException;
 import org.wildfly.security.authz.Attributes;
 import org.wildfly.security.authz.AuthorizationIdentity;
 import org.wildfly.security.authz.MapAttributes;
@@ -919,7 +920,7 @@ public class FileSystemSecurityRealmTest {
         getRootPath(); // will fail on windows if iterator not closed correctly
     }
 
-    @Test(expected = RealmUnavailableException.class)
+    @Test(expected = InvalidKeyException.class)
     public void testMismatchSecretKey() throws Exception {
         char[] actualPassword = "secretPassword".toCharArray();
         PasswordFactory factory = PasswordFactory.getInstance(ClearPassword.ALGORITHM_CLEAR);

@@ -41,6 +41,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
@@ -966,6 +967,8 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                 } catch (XMLStreamException e) {
                     throw ElytronMessages.log.fileSystemRealmFailedToRead(path, name, e);
                 }
+            } catch (RealmUnavailableException e) {
+                throw ElytronMessages.log.fileSystemRealmInvalidSecretKey(e);
             } catch (NoSuchFileException | FileNotFoundException ignored) {
                 return null;
             } catch (IOException e) {
@@ -979,7 +982,11 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
             if (tag != START_ELEMENT || ((version = identifyVersion(streamReader)) == null) || ! "identity".equals(streamReader.getLocalName())) {
                 throw ElytronMessages.log.fileSystemRealmInvalidContent(path, streamReader.getLocation().getLineNumber(), name);
             }
-            return parseIdentityContents(streamReader, version, skipCredentials, skipAttributes);
+            try {
+                return parseIdentityContents(streamReader, version, skipCredentials, skipAttributes);
+            } catch (RealmUnavailableException e) {
+                throw ElytronMessages.log.fileSystemRealmInvalidSecretKey(e);
+            }
         }
 
         private Version identifyVersion(final XMLStreamReader streamReader) {
@@ -1013,14 +1020,22 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                     if (skipCredentials) {
                         consumeContent(streamReader);
                     } else {
-                        credentials = parseCredentials(streamReader, version);
+                        try {
+                            credentials = parseCredentials(streamReader, version);
+                        } catch (RealmUnavailableException e) {
+                            throw ElytronMessages.log.fileSystemRealmInvalidSecretKey(e);
+                        }
                     }
                 } else if (! gotAttributes && "attributes".equals(streamReader.getLocalName())) {
                     gotAttributes = true;
                     if (skipAttributes) {
                         consumeContent(streamReader);
                     } else {
-                        attributes = parseAttributes(streamReader, version);
+                        try {
+                            attributes = parseAttributes(streamReader, version);
+                        } catch (RealmUnavailableException e) {
+                            throw ElytronMessages.log.fileSystemRealmInvalidSecretKey(e);
+                        }
                     }
                 }
                 streamReader.nextTag();
@@ -1041,16 +1056,20 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                     // Mixed versions unsupported.
                     throw ElytronMessages.log.fileSystemRealmInvalidContent(path, streamReader.getLocation().getLineNumber(), name);
                 }
-                if ("password".equals(streamReader.getLocalName())) {
-                    parsePassword(credentials, streamReader);
-                } else if ("public-key".equals(streamReader.getLocalName())) {
-                    parsePublicKey(credentials, streamReader);
-                } else if ("certificate".equals(streamReader.getLocalName())) {
-                    parseCertificate(credentials, streamReader);
-                } else if ("otp".equals(streamReader.getLocalName())) {
-                    parseOtp(credentials, streamReader);
-                } else {
-                    throw ElytronMessages.log.fileSystemRealmInvalidContent(path, streamReader.getLocation().getLineNumber(), name);
+                try {
+                    if ("password".equals(streamReader.getLocalName())) {
+                        parsePassword(credentials, streamReader);
+                    } else if ("public-key".equals(streamReader.getLocalName())) {
+                        parsePublicKey(credentials, streamReader);
+                    } else if ("certificate".equals(streamReader.getLocalName())) {
+                        parseCertificate(credentials, streamReader);
+                    } else if ("otp".equals(streamReader.getLocalName())) {
+                        parseOtp(credentials, streamReader);
+                    } else {
+                        throw ElytronMessages.log.fileSystemRealmInvalidContent(path, streamReader.getLocation().getLineNumber(), name);
+                    }
+                } catch (RealmUnavailableException e) {
+                    throw ElytronMessages.log.fileSystemRealmInvalidSecretKey(e);
                 }
             } while (streamReader.nextTag() != END_ELEMENT);
             return credentials;
@@ -1156,6 +1175,8 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                     } else {
                         throw ElytronMessages.log.fileSystemRealmInvalidPasswordFormat(format, path, streamReader.getLocation().getLineNumber(), name);
                     }
+                } catch (InvalidKeyException e){
+                    throw ElytronMessages.log.fileSystemRealmInvalidSecretKey(e);
                 } catch (GeneralSecurityException e) {
                     throw ElytronMessages.log.fileSystemRealmInvalidContent(path, streamReader.getLocation().getLineNumber(), name);
                 }
@@ -1263,6 +1284,8 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                 } else {
                     attributes.addLast(name, value);
                 }
+            } catch (InvalidKeyException e){
+                throw ElytronMessages.log.fileSystemRealmInvalidSecretKey(e);
             } catch (GeneralSecurityException e) {
                 throw ElytronMessages.log.fileSystemRealmInvalidContent(path, streamReader.getLocation().getLineNumber(), this.name);
             }

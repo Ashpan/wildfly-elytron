@@ -19,6 +19,7 @@
 package org.wildfly.security.encryption;
 
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
@@ -55,5 +56,8 @@ public interface ElytronMessages extends BasicLogger {
 
     @Message(id = 19004, value = "Unable to decode Base64 token.")
     GeneralSecurityException unableToDecodeBase64Token(@Cause Throwable cause);
+
+    @Message(id = 19005, value = "Invalid SecretKey.")
+    InvalidKeyException invalidSecretKey();
 
 }
