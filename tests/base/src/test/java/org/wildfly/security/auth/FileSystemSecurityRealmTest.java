@@ -55,7 +55,6 @@ import org.wildfly.security.auth.realm.FileSystemSecurityRealm;
 import org.wildfly.security.auth.server.ModifiableRealmIdentity;
 import org.wildfly.security.auth.server.ModifiableRealmIdentityIterator;
 import org.wildfly.security.auth.server.NameRewriter;
-import org.wildfly.security.auth.server.RealmUnavailableException;
 import org.wildfly.security.authz.Attributes;
 import org.wildfly.security.authz.AuthorizationIdentity;
 import org.wildfly.security.authz.MapAttributes;
@@ -919,7 +918,7 @@ public class FileSystemSecurityRealmTest {
         getRootPath(); // will fail on windows if iterator not closed correctly
     }
 
-    @Test(expected = RealmUnavailableException.class)
+    @Test
     public void testMismatchSecretKey() throws Exception {
         char[] actualPassword = "secretPassword".toCharArray();
         PasswordFactory factory = PasswordFactory.getInstance(ClearPassword.ALGORITHM_CLEAR);
@@ -938,7 +937,11 @@ public class FileSystemSecurityRealmTest {
                 .setSecretKey(SecretKeyUtil.generateSecretKey(192))
                 .build();
         ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
-        existingIdentity.verifyEvidence(new PasswordGuessEvidence(actualPassword));
+        try {
+            existingIdentity.verifyEvidence(new PasswordGuessEvidence(actualPassword));
+        } catch (Exception e) {
+            assertEquals("ELY13005: Filesystem-backed realm unable to decrypt identity.", e.getCause().getMessage());
+        }
         existingIdentity.dispose();
     }
 
