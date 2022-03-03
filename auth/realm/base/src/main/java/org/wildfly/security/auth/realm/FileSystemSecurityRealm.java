@@ -741,7 +741,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                 throw ElytronMessages.log.fileSystemRealmNotFound(name);
             }
 
-            final LoadedIdentity newIdentity = new LoadedIdentity(name, new ArrayList<>(credentials), loadedIdentity.getAttributes(), hashEncoding, providers);
+            final LoadedIdentity newIdentity = new LoadedIdentity(name, new ArrayList<>(credentials), loadedIdentity.getAttributes(), hashEncoding);
             replaceIdentity(newIdentity);
         }
 
@@ -751,7 +751,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
             if (loadedIdentity == null) {
                 throw ElytronMessages.log.fileSystemRealmNotFound(name);
             }
-            final LoadedIdentity newIdentity = new LoadedIdentity(name, loadedIdentity.getCredentials(), attributes, hashEncoding, providers);
+            final LoadedIdentity newIdentity = new LoadedIdentity(name, loadedIdentity.getCredentials(), attributes, hashEncoding);
             replaceIdentity(newIdentity);
         }
 
@@ -1006,7 +1006,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                         //modifiable version of Attributes;
                         attributes = new MapAttributes();
                     }
-                    return new LoadedIdentity(name, credentials, attributes, hashEncoding, providers);
+                    return new LoadedIdentity(name, credentials, attributes, hashEncoding);
                 }
                 if (! version.getNamespace().equals(streamReader.getNamespaceURI())) {
                     // Mixed versions unsupported.
@@ -1301,14 +1301,12 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
         private final List<Credential> credentials;
         private final Attributes attributes;
         private final Encoding hashEncoding;
-        private final Supplier<Provider[]> providers;
 
-        LoadedIdentity(final String name, final List<Credential> credentials, final Attributes attributes, final Encoding hashEncoding, final Supplier<Provider[]> providers) {
+        LoadedIdentity(final String name, final List<Credential> credentials, final Attributes attributes, final Encoding hashEncoding) {
             this.name = name;
             this.credentials = credentials;
             this.attributes = attributes;
             this.hashEncoding = hashEncoding;
-            this.providers = providers;
         }
 
         public String getName() {
@@ -1325,10 +1323,6 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
 
         public Encoding getHashEncoding() {
             return hashEncoding;
-        }
-
-        public Supplier<Provider[]> getProviders() {
-            return providers;
         }
 
     }

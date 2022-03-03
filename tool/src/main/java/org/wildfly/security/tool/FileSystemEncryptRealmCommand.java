@@ -613,7 +613,7 @@ class FileSystemEncryptRealmCommand extends Command {
                 continue;
             }
             CredentialStore credentialStore;
-//            check if credential-store and secret-key-alias are both specified, or both null
+            // check if credential-store and secret-key-alias are both specified, or both null
             if (! (descriptor.getCredentialStore() == null ^ descriptor.getSecretKeyAlias() == null) ){
                 boolean isNew = false;
                 if (descriptor.getCredentialStore() == null) {
