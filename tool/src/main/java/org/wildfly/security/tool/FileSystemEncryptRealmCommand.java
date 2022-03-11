@@ -18,16 +18,12 @@
 package org.wildfly.security.tool;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
-import java.security.Security;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,7 +40,6 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.wildfly.security.WildFlyElytronProvider;
 import org.wildfly.security.auth.realm.FileSystemRealmUtil;
 import org.wildfly.security.auth.realm.FileSystemSecurityRealm;
 import org.wildfly.security.credential.Credential;
@@ -75,8 +70,8 @@ class FileSystemEncryptRealmCommand extends Command {
     private static final String REALM_NAME_PARAM = "realm-name";
     private static final String OUTPUT_REALM_LOCATION_PARAM = "output-location";
     private static final String CREDENTIAL_STORE_LOCATION_PARAM = "credential-store";
+    private static final String CREATE_CREDENTIAL_STORE_PARAM = "create";
     private static final String SECRET_KEY_ALIAS_PARAM = "secret-key";
-    private static final String HASH_CHARSET_PARAM = "hash-charset";
     private static final String HASH_ENCODING_PARAM = "hash-encoding";
     private static final String ENCODED_PARAM = "encoded";
     private static final String LEVELS_PARAM = "levels";
@@ -120,11 +115,12 @@ class FileSystemEncryptRealmCommand extends Command {
         option.setArgName(FILE_ARG);
         options.addOption(option);
 
-        option = new Option("s", SECRET_KEY_ALIAS_PARAM, true, ElytronToolMessages.msg.cmdFileSystemEncryptSecretKeyDesc());
+        option = new Option("a", CREATE_CREDENTIAL_STORE_PARAM, true, ElytronToolMessages.msg.cmdFileSystemEncryptCreateCredentialStoreDesc());
         option.setArgName(FILE_ARG);
         options.addOption(option);
 
-        option = new Option("h", HASH_CHARSET_PARAM, true, ElytronToolMessages.msg.cmdFileSystemEncryptHashCharsetDesc());
+
+        option = new Option("s", SECRET_KEY_ALIAS_PARAM, true, ElytronToolMessages.msg.cmdFileSystemEncryptSecretKeyDesc());
         option.setArgName(FILE_ARG);
         options.addOption(option);
 
@@ -165,9 +161,8 @@ class FileSystemEncryptRealmCommand extends Command {
         private String secretKeyAlias;
         private int levels;
         private Encoding hashEncoding;
-        private Charset hashCharset;
         private Boolean encoded;
-
+        private Boolean createCredentialStore;
         Descriptor() {
         }
 
@@ -177,17 +172,9 @@ class FileSystemEncryptRealmCommand extends Command {
             this.FileSystemRealmName = descriptor.FileSystemRealmName;
             this.credentialStore = descriptor.credentialStore;
             this.hashEncoding = descriptor.hashEncoding;
-            this.hashCharset = descriptor.hashCharset;
             this.levels = descriptor.levels;
             this.encoded = descriptor.encoded;
-        }
-
-        public Charset getHashCharset() {
-            return hashCharset;
-        }
-
-        public void setHashCharset(Charset charset) {
-            this.hashCharset = charset;
+            this.createCredentialStore = descriptor.createCredentialStore;
         }
 
         public Encoding getHashEncoding() {
@@ -242,12 +229,20 @@ class FileSystemEncryptRealmCommand extends Command {
             return this.credentialStore;
         }
 
-        String getSecretKeyAlias() {
-            return this.secretKeyAlias;
-        }
-
         void setCredentialStore(String credentialStore) {
             this.credentialStore = credentialStore;
+        }
+
+        Boolean getCreateCredentialStore() {
+            return this.createCredentialStore;
+        }
+
+        void setCreateCredentialStore(Boolean createCredentialStore) {
+            this.createCredentialStore = createCredentialStore;
+        }
+
+        String getSecretKeyAlias() {
+            return this.secretKeyAlias;
         }
 
         void setSecretKeyAlias(String secretKeyAlias) {
@@ -259,8 +254,8 @@ class FileSystemEncryptRealmCommand extends Command {
             this.outputRealmLocation = null;
             this.FileSystemRealmName = null;
             this.credentialStore = null;
+            this.createCredentialStore = null;
             this.secretKeyAlias = null;
-            this.hashCharset = null;
             this.hashEncoding = null;
             this.encoded = null;
             this.levels = 0;
@@ -285,7 +280,7 @@ class FileSystemEncryptRealmCommand extends Command {
             summaryString = new StringBuilder();
             summaryString.append(String.join("", Collections.nCopies(SUMMARY_WIDTH, "-")));
             summaryString.append(System.getProperty("line.separator"));
-            summaryString.append("Summary for execution of Elytron-Tool command FileSystemEncrypt");
+            summaryString.append("Summary for execution of Elytron-Tool command FileSystemRealmEncrypt");
             summaryString.append(System.getProperty("line.separator"));
             summaryString.append(String.join("", Collections.nCopies(SUMMARY_WIDTH, "-")));
             summaryString.append(System.getProperty("line.separator"));
@@ -296,8 +291,8 @@ class FileSystemEncryptRealmCommand extends Command {
         String inputRealmLocationOption = cmdLine.getOptionValue("i");
         String outputRealmLocationOption = cmdLine.getOptionValue("o");
         String credentialStoreOption = cmdLine.getOptionValue("c");
+        String createCredentialStore = cmdLine.getOptionValue("a");
         String secretKeyAliasOption = cmdLine.getOptionValue("k");
-        String hashCharsetOption = cmdLine.getOptionValue("h");
         String hashEncodingOption = cmdLine.getOptionValue("e");
         String levelsOption = cmdLine.getOptionValue("l");
         String encodedOption = cmdLine.getOptionValue("f");
@@ -312,15 +307,6 @@ class FileSystemEncryptRealmCommand extends Command {
             descriptor.setFileSystemRealmName(realmNameOption);
             descriptor.setOutputRealmLocation(Paths.get(outputRealmLocationOption).toString());
             descriptor.setInputRealmLocation(Paths.get(inputRealmLocationOption).toString());
-            if (hashCharsetOption == null) {
-                descriptor.setHashCharset(StandardCharsets.UTF_8);
-            } else {
-                try {
-                    descriptor.setHashCharset(Charset.forName(hashCharsetOption));
-                } catch (UnsupportedCharsetException e) {
-                    errorHandler(e);
-                }
-            }
             if (hashEncodingOption == null) {
                 descriptor.setHashEncoding(Encoding.BASE64);
             } else {
@@ -347,6 +333,11 @@ class FileSystemEncryptRealmCommand extends Command {
                 } catch (IllegalArgumentException e) {
                     errorHandler(e);
                 }
+            }
+            if (createCredentialStore != null) {
+                descriptor.setCreateCredentialStore(true);
+            } else {
+                descriptor.setCreateCredentialStore(false);
             }
             if (credentialStoreOption != null && secretKeyAliasOption != null) {
                 descriptor.setCredentialStore(Paths.get(credentialStoreOption).toString());
@@ -524,8 +515,8 @@ class FileSystemEncryptRealmCommand extends Command {
                         case SECRET_KEY_ALIAS_PARAM:
                             descriptor.setSecretKeyAlias(arg);
                             break;
-                        case HASH_CHARSET_PARAM:
-                            descriptor.setHashCharset(Charset.forName(arg));
+                        case CREATE_CREDENTIAL_STORE_PARAM:
+                            descriptor.setCreateCredentialStore(Boolean.parseBoolean(arg));
                             break;
                         case HASH_ENCODING_PARAM:
                             descriptor.setHashEncoding(Encoding.valueOf(arg.toUpperCase()));
@@ -583,9 +574,6 @@ class FileSystemEncryptRealmCommand extends Command {
             warningHandler(ElytronToolMessages.msg.skippingDescriptorBlockFilesystemRealmName(count));
             missingRequiredValue = true;
         }
-        if(descriptor.getHashCharset() == null) {
-            descriptor.setHashCharset(StandardCharsets.UTF_8);
-        }
         if(descriptor.getHashEncoding() == null) {
             descriptor.setHashEncoding(Encoding.BASE64);
         }
@@ -594,6 +582,9 @@ class FileSystemEncryptRealmCommand extends Command {
         }
         if(descriptor.getLevels() == 0) {
             descriptor.setLevels(2);
+        }
+        if(descriptor.getCreateCredentialStore() == null) {
+            descriptor.setCreateCredentialStore(false);
         }
         if (missingRequiredValue) {
             descriptor.reset();
@@ -606,21 +597,18 @@ class FileSystemEncryptRealmCommand extends Command {
      * @throws Exception Exception to be handled by Elytron Tool
      */
     private void createFileSystemRealm() throws Exception {
-        Security.addProvider(new WildFlyElytronProvider());
         for (Descriptor descriptor : descriptors) {
             System.out.println("Creating encrypted realm for: " + descriptor.getInputRealmLocation());
             if (descriptor.getFileSystemRealmName() == null || descriptor.getInputRealmLocation() == null || descriptor.getOutputRealmLocation() == null) {
                 continue;
             }
             CredentialStore credentialStore;
+            if (descriptor.getCreateCredentialStore()) {
+                descriptor.setCredentialStore(Paths.get(descriptor.getOutputRealmLocation(), "mycredstore.cs").toString());
+                descriptor.setSecretKeyAlias("key");
+            }
             // check if credential-store and secret-key-alias are both specified, or both null
             if (! (descriptor.getCredentialStore() == null ^ descriptor.getSecretKeyAlias() == null) ){
-                boolean isNew = false;
-                if (descriptor.getCredentialStore() == null) {
-                    descriptor.setCredentialStore(Paths.get(descriptor.getOutputRealmLocation(), "mycredstore.cs").toString());
-                    descriptor.setSecretKeyAlias("key");
-                    isNew = true;
-                }
                 String csType = PropertiesCredentialStore.NAME;
                 try {
                     credentialStore = CredentialStore.getInstance(csType);
@@ -629,7 +617,7 @@ class FileSystemEncryptRealmCommand extends Command {
                     credentialStore = CredentialStore.getInstance(csType, getProvidersSupplier(null));
                 }
                 Map<String, String> implProps = new HashMap<>();
-                implProps.put("create", "true");
+                implProps.put("create", String.valueOf(descriptor.getCreateCredentialStore()));
                 implProps.put("location", descriptor.getCredentialStore());
                 implProps.put("modifiable", Boolean.TRUE.toString());
                 credentialStore.initialize(implProps);
@@ -637,7 +625,7 @@ class FileSystemEncryptRealmCommand extends Command {
                     credentialStore.retrieve(descriptor.getSecretKeyAlias(), SecretKeyCredential.class).getSecretKey();
                     System.out.println("Found credential store and alias, using pre-existing key");
                 } catch (Exception e) {
-                    if (!isNew) {
+                    if (!descriptor.getCreateCredentialStore()) {
                         System.out.println("Could not find credential store and secret key alias, exiting");
                         continue;
                     }
@@ -654,7 +642,7 @@ class FileSystemEncryptRealmCommand extends Command {
             try {
                 key = credentialStore.retrieve(descriptor.getSecretKeyAlias(), SecretKeyCredential.class).getSecretKey();
             } catch (NullPointerException e) {
-                System.out.println("Invalid SecretKey");
+//                throw new InvalidKeySpecException(e);
                 continue;
             }
 
@@ -690,7 +678,6 @@ class FileSystemEncryptRealmCommand extends Command {
             String credentialStore = descriptor.getCredentialStore();
             String secretKeyAlias = descriptor.getSecretKeyAlias();
             int levels = descriptor.getLevels();
-            Charset hashCharset = descriptor.getHashCharset();
 
             if(secretKeyAlias == null) {
                 secretKeyAlias = "key";
@@ -706,7 +693,7 @@ class FileSystemEncryptRealmCommand extends Command {
             }
             String fullOutputPath;
             if (outputRealmLocation.startsWith(".")) {
-                fullOutputPath = Paths.get(outputRealmLocation.substring(2, outputRealmLocation.length())).toAbsolutePath().toString();
+                fullOutputPath = Paths.get(outputRealmLocation.substring(2)).toAbsolutePath().toString();
             } else {
                 fullOutputPath = Paths.get(outputRealmLocation).toAbsolutePath().toString();
             }
@@ -721,8 +708,8 @@ class FileSystemEncryptRealmCommand extends Command {
             }
 
             List<String> scriptLines = Arrays.asList(
-                String.format("/subsystem=elytron/secret-key-credential-store=%s:add(path=%s, create=true)", "mycredstore"+counter, fullOutputPath+"/mycredstore.cs"),
-                String.format("/subsystem=elytron/filesystem-realm=%s:add(path=%s, levels=%s, hash-charset=%s, credential-store=%s, secret-key=%s)", fileSystemRealmName, fullOutputPath+'/'+fileSystemRealmName, levels, hashCharset.toString(), "mycredstore"+counter, secretKeyAlias)
+                String.format("/subsystem=elytron/secret-key-credential-store=%s:add(path=%s, create=true)", "mycredstore"+counter, credentialStore),
+                String.format("/subsystem=elytron/filesystem-realm=%s:add(path=%s, levels=%s, credential-store=%s, secret-key=%s)", fileSystemRealmName, fullOutputPath+'/'+fileSystemRealmName, levels, "mycredstore"+counter, secretKeyAlias)
             );
 
             if (!createScriptCheck.equals("y") && !createScriptCheck.equals("yes")) {

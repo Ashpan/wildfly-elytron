@@ -406,8 +406,8 @@ public interface ElytronToolMessages extends BasicLogger {
     @Message(id = NONE, value = "The alias of the secret key stored in the credential store file.")
     String cmdFileSystemEncryptSecretKeyDesc();
 
-    @Message(id = NONE, value = "The hash charset to be used in the filesystem realm. Set to UTF-8 by default.")
-    String cmdFileSystemEncryptHashCharsetDesc();
+    @Message(id = NONE, value = "Should a credential store be created? Set to false by default.")
+    String cmdFileSystemEncryptCreateCredentialStoreDesc();
 
     @Message(id = NONE, value = "The hash encoding to be used in the filesystem realm. Set to BASE64 by default.")
     String cmdFileSystemEncryptHashEncodingDesc();
@@ -462,8 +462,8 @@ public interface ElytronToolMessages extends BasicLogger {
             "Blocks of options must be separated by a blank line.")
     String cmdFileSystemRealmEncryptBulkConvertDesc();
 
-    // filesystem-realm command
-    @Message(id = NONE, value = "'FileSystemEncrypt' command is used to convert un-encrypted FileSystemRealms to one encrypted with a SecretKey.")
+    // filesystem-realm encrypt command
+    @Message(id = NONE, value = "'FileSystemRealmEncrypt' command is used to convert un-encrypted FileSystemSecurityRealm(s) to encrypted FileSystemSecurityRealm(s) with a SecretKey.")
     String cmdFileSystemEncryptHelpHeader();
 
     @Message(id = NONE, value = "If specifying either credential-store or secret-key, make sure to also specify the other one as well.")

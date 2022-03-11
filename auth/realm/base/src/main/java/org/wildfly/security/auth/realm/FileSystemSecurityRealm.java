@@ -534,7 +534,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
             this.lock = lock;
             this.hashCharset = hashCharset;
             this.hashEncoding = hashEncoding;
-            this.providers = providers != null ? providers : INSTALLED_PROVIDERS;
+            this.providers = providers;
             this.secretKey = secretKey;
         }
 
@@ -840,7 +840,6 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
             // if new functionality is used then use the required schema version otherwise fallback
             // to an older version.
 
-            // Do we require version 1.1?
             if (secretKey != null) {
                 return Version.VERSION_1_1;
             }
@@ -1044,7 +1043,7 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
                     throw ElytronMessages.log.fileSystemRealmInvalidContent(path, streamReader.getLocation().getLineNumber(), name);
                 }
                 if ("password".equals(streamReader.getLocalName())) {
-                    parsePassword(credentials, streamReader);
+                    parsePassword(credentials, streamReader, version);
                 } else if ("public-key".equals(streamReader.getLocalName())) {
                     parsePublicKey(credentials, streamReader);
                 } else if ("certificate".equals(streamReader.getLocalName())) {
@@ -1118,10 +1117,13 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
             });
         }
 
-        private void parsePassword(final List<Credential> credentials, final XMLStreamReader streamReader) throws XMLStreamException, RealmUnavailableException {
+        private void parsePassword(final List<Credential> credentials, final XMLStreamReader streamReader, final Version version) throws XMLStreamException, RealmUnavailableException {
             parseCredential(streamReader, (algorithm, format, text) -> {
                 try {
                     if (ENCRYPTION_FORMAT.equals(format)) {
+                        if (! version.isAtLeast(Version.VERSION_1_1)) {
+                            throw ElytronMessages.log.fileSystemRealmIncompatibleIdentityVersion(Version.VERSION_1_1.getNamespace());
+                        }
                         if (algorithm == null) {
                             throw ElytronMessages.log.fileSystemRealmMissingAttribute("algorithm", path, streamReader.getLocation().getLineNumber(), name);
                         }
@@ -1264,15 +1266,15 @@ public final class FileSystemSecurityRealm implements ModifiableSecurityRealm, C
             if (value == null) {
                 throw ElytronMessages.log.fileSystemRealmMissingAttribute("value", path, streamReader.getLocation().getLineNumber(), this.name);
             }
-                if (secretKey != null) {
-                    try {
-                        attributes.addLast(CipherUtil.decrypt(name, secretKey), CipherUtil.decrypt(value, secretKey));
-                    } catch (GeneralSecurityException e){
-                        throw ElytronMessages.log.fileSystemRealmDecryptionFailed(e);
-                    }
-                } else {
-                    attributes.addLast(name, value);
+            if (secretKey != null) {
+                try {
+                    attributes.addLast(CipherUtil.decrypt(name, secretKey), CipherUtil.decrypt(value, secretKey));
+                } catch (GeneralSecurityException e){
+                    throw ElytronMessages.log.fileSystemRealmDecryptionFailed(e);
                 }
+            } else {
+                attributes.addLast(name, value);
+            }
             if (streamReader.nextTag() != END_ELEMENT) {
                 throw ElytronMessages.log.fileSystemRealmInvalidContent(path, streamReader.getLocation().getLineNumber(), this.name);
             }

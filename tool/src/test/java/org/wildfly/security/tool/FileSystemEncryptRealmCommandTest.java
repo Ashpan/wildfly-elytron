@@ -35,19 +35,19 @@ public class FileSystemEncryptRealmCommandTest extends AbstractCommandTest{
 
     private void runCommand(String inputLocation, String outputLocation, String fileSystemRealmName, String encoded, int expectedStatus) {
         String[] requiredArgs;
-        requiredArgs = new String[]{"--input-location", inputLocation, "--output-location", outputLocation, "--realm-name", fileSystemRealmName, "--encoded", encoded};
+        requiredArgs = new String[]{"--input-location", inputLocation, "--output-location", outputLocation, "--realm-name", fileSystemRealmName, "--encoded", encoded, "--create", "true"};
         executeCommandAndCheckStatus(requiredArgs, expectedStatus);
     }
 
     private void runCommand(String inputLocation, String outputLocation, String fileSystemRealmName, int levels, String encoded, int expectedStatus) {
         String[] requiredArgs;
-        requiredArgs = new String[]{"--input-location", inputLocation, "--output-location", outputLocation, "--realm-name", fileSystemRealmName, "--levels", String.valueOf(levels), "--encoded", encoded};
+        requiredArgs = new String[]{"--input-location", inputLocation, "--output-location", outputLocation, "--realm-name", fileSystemRealmName, "--levels", String.valueOf(levels), "--encoded", encoded, "--create", "true"};
         executeCommandAndCheckStatus(requiredArgs, expectedStatus);
     }
 
     private void runCommand(String inputLocation, String outputLocation, String fileSystemRealmName, String credentialStore, String secretKey, String encoded, int expectedStatus) {
         String[] requiredArgs;
-        requiredArgs = new String[]{"--input-location", inputLocation, "--output-location", outputLocation, "--realm-name", fileSystemRealmName, "--credential-store", credentialStore, "--secret-key", secretKey, "--encoded", encoded};
+        requiredArgs = new String[]{"--input-location", inputLocation, "--output-location", outputLocation, "--realm-name", fileSystemRealmName, "--credential-store", credentialStore, "--secret-key", secretKey, "--encoded", encoded, "--create", "true"};
         executeCommandAndCheckStatus(requiredArgs, expectedStatus);
     }
 

@@ -152,4 +152,7 @@ interface ElytronMessages extends BasicLogger {
 
     @Message(id = 13006, value = "Filesystem-backed realm unable to encrypt identity")
     RealmUnavailableException fileSystemRealmEncryptionFailed(@Cause Throwable cause);
+
+    @Message(id = 13007, value = "Filesystem-backed realm found an incompatible identity version. Requires at least version: %s")
+    RealmUnavailableException fileSystemRealmIncompatibleIdentityVersion(String expectedVersion);
 }

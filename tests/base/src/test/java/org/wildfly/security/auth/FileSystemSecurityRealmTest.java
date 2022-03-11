@@ -36,8 +36,6 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.GeneralSecurityException;
-import java.security.Provider;
-import java.security.Security;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,9 +43,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.crypto.SecretKey;
-import org.junit.AfterClass;
+import javax.crypto.spec.SecretKeySpec;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.wildfly.common.iteration.CodePointIterator;
 import org.wildfly.security.auth.principal.NamePrincipal;
@@ -64,7 +61,6 @@ import org.wildfly.security.encryption.SecretKeyUtil;
 import org.wildfly.security.evidence.PasswordGuessEvidence;
 import org.wildfly.security.password.Password;
 import org.wildfly.security.password.PasswordFactory;
-import org.wildfly.security.password.WildFlyElytronPasswordProvider;
 import org.wildfly.security.password.interfaces.BCryptPassword;
 import org.wildfly.security.password.interfaces.ClearPassword;
 import org.wildfly.security.password.interfaces.DigestPassword;
@@ -79,6 +75,7 @@ import org.wildfly.security.password.spec.EncryptablePasswordSpec;
 import org.wildfly.security.password.spec.IteratedSaltedPasswordAlgorithmSpec;
 import org.wildfly.security.password.spec.OneTimePasswordSpec;
 import org.wildfly.security.password.spec.SaltedPasswordAlgorithmSpec;
+import org.xipki.common.util.Base64;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -86,21 +83,12 @@ import org.wildfly.security.password.spec.SaltedPasswordAlgorithmSpec;
 // has dependency on wildfly-elytron-realm, wildfly-elytron-auth-server, wildfly-elytron-credential
 public class FileSystemSecurityRealmTest {
 
-    private static final Provider provider = WildFlyElytronPasswordProvider.getInstance();
+//    private static final Provider provider = WildFlyElytronPasswordProvider.getInstance();
 
     public FileSystemSecurityRealmTest() throws GeneralSecurityException {
     }
 
-    @BeforeClass
-    public static void onBefore() throws Exception {
-        Security.addProvider(provider);
-    }
-
-    @AfterClass
-    public static void onAfter() throws Exception {
-        Security.removeProvider(provider.getName());
-    }
-    SecretKey key = SecretKeyUtil.generateSecretKey(128);
+    private final SecretKey key = SecretKeyUtil.generateSecretKey(128);
 
     @Test
     public void testCreateIdentityWithNoLevels() throws Exception {
@@ -129,7 +117,7 @@ public class FileSystemSecurityRealmTest {
     @Test
     public void testCreateIdentityWithLevelsEncryption() throws Exception {
         FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath(false))
+                .setRoot(getRootPath())
                 .setLevels(3)
                 .setSecretKey(key)
                 .build();
@@ -369,7 +357,7 @@ public class FileSystemSecurityRealmTest {
     @Test
     public void testCreateIdentityWithClearPasswordEncryption() throws Exception {
         char[] actualPassword = "secretPassword".toCharArray();
-        PasswordFactory factory = PasswordFactory.getInstance(ClearPassword.ALGORITHM_CLEAR);
+        PasswordFactory factory = PasswordFactory.getInstance(ClearPassword.ALGORITHM_CLEAR, ELYTRON_PASSWORD_PROVIDERS);
         ClearPassword clearPassword = (ClearPassword) factory.generatePassword(new ClearPasswordSpec(actualPassword));
 
         assertCreateIdentityWithPassword(actualPassword, clearPassword, key);
@@ -388,7 +376,7 @@ public class FileSystemSecurityRealmTest {
 
     @Test
     public void testCreateIdentityWithBcryptCredentialEncryption() throws Exception {
-        PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT);
+        PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT, ELYTRON_PASSWORD_PROVIDERS);
         char[] actualPassword = "secretPassword".toCharArray();
         BCryptPassword bCryptPassword = (BCryptPassword) passwordFactory.generatePassword(
                 new EncryptablePasswordSpec(actualPassword, new IteratedSaltedPasswordAlgorithmSpec(10, generateRandomSalt(BCRYPT_SALT_SIZE)))
@@ -409,7 +397,7 @@ public class FileSystemSecurityRealmTest {
 
     @Test
     public void testCreateIdentityWithBcryptCredentialHexEncodedEncryption() throws Exception {
-        PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT);
+        PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT, ELYTRON_PASSWORD_PROVIDERS);
         char[] actualPassword = "secretPassword".toCharArray();
         BCryptPassword bCryptPassword = (BCryptPassword) passwordFactory.generatePassword(
                 new EncryptablePasswordSpec(actualPassword, new IteratedSaltedPasswordAlgorithmSpec(10, generateRandomSalt(BCRYPT_SALT_SIZE))));
@@ -430,7 +418,7 @@ public class FileSystemSecurityRealmTest {
 
     @Test
     public void testCreateIdentityWithBcryptCredentialBase64AndCharsetEncryption() throws Exception {
-        PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT);
+        PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT, ELYTRON_PASSWORD_PROVIDERS);
         char[] actualPassword = "password密码".toCharArray();
         BCryptPassword bCryptPassword = (BCryptPassword) passwordFactory.generatePassword(
                 new EncryptablePasswordSpec(actualPassword, new IteratedSaltedPasswordAlgorithmSpec(10, generateRandomSalt(BCRYPT_SALT_SIZE)),
@@ -465,7 +453,7 @@ public class FileSystemSecurityRealmTest {
     public void testCreateIdentityWithScramCredentialEncryption() throws Exception {
         char[] actualPassword = "secretPassword".toCharArray();
         byte[] salt = generateRandomSalt(BCRYPT_SALT_SIZE);
-        PasswordFactory factory = PasswordFactory.getInstance(ScramDigestPassword.ALGORITHM_SCRAM_SHA_256);
+        PasswordFactory factory = PasswordFactory.getInstance(ScramDigestPassword.ALGORITHM_SCRAM_SHA_256, ELYTRON_PASSWORD_PROVIDERS);
         EncryptablePasswordSpec encSpec = new EncryptablePasswordSpec(actualPassword, new IteratedSaltedPasswordAlgorithmSpec(4096, salt));
         ScramDigestPassword scramPassword = (ScramDigestPassword) factory.generatePassword(encSpec);
 
@@ -509,7 +497,7 @@ public class FileSystemSecurityRealmTest {
     @Test
     public void testCreateIdentityWithDigestEncryption() throws Exception {
         char[] actualPassword = "secretPassword".toCharArray();
-        PasswordFactory factory = PasswordFactory.getInstance(DigestPassword.ALGORITHM_DIGEST_SHA_512);
+        PasswordFactory factory = PasswordFactory.getInstance(DigestPassword.ALGORITHM_DIGEST_SHA_512, ELYTRON_PASSWORD_PROVIDERS);
         DigestPasswordAlgorithmSpec dpas = new DigestPasswordAlgorithmSpec("jsmith", "elytron");
         EncryptablePasswordSpec encryptableSpec = new EncryptablePasswordSpec(actualPassword, dpas);
         DigestPassword digestPassword = (DigestPassword) factory.generatePassword(encryptableSpec);
@@ -542,7 +530,7 @@ public class FileSystemSecurityRealmTest {
     @Test
     public void testCreateIdentityWithDigestHexEncodedAndCharsetEncryption() throws Exception {
         char[] actualPassword = "secretPassword".toCharArray();
-        PasswordFactory factory = PasswordFactory.getInstance(DigestPassword.ALGORITHM_DIGEST_SHA_512);
+        PasswordFactory factory = PasswordFactory.getInstance(DigestPassword.ALGORITHM_DIGEST_SHA_512, ELYTRON_PASSWORD_PROVIDERS);
         DigestPasswordAlgorithmSpec dpas = new DigestPasswordAlgorithmSpec("jsmith", "elytron");
         EncryptablePasswordSpec encryptableSpec = new EncryptablePasswordSpec(actualPassword, dpas);
         DigestPassword digestPassword = (DigestPassword) factory.generatePassword(encryptableSpec);
@@ -622,7 +610,7 @@ public class FileSystemSecurityRealmTest {
         byte[] salt = generateRandomSalt(BCRYPT_SALT_SIZE);
         SaltedPasswordAlgorithmSpec spac = new SaltedPasswordAlgorithmSpec(salt);
         EncryptablePasswordSpec eps = new EncryptablePasswordSpec(actualPassword, spac, Charset.forName("gb2312"));
-        PasswordFactory passwordFactory = PasswordFactory.getInstance(SaltedSimpleDigestPassword.ALGORITHM_PASSWORD_SALT_DIGEST_SHA_512);
+        PasswordFactory passwordFactory = PasswordFactory.getInstance(SaltedSimpleDigestPassword.ALGORITHM_PASSWORD_SALT_DIGEST_SHA_512, ELYTRON_PASSWORD_PROVIDERS);
         SaltedSimpleDigestPassword tsdp = (SaltedSimpleDigestPassword) passwordFactory.generatePassword(eps);
 
         assertCreateIdentityWithPassword(actualPassword, tsdp, Encoding.HEX, Charset.forName("gb2312"), key);
@@ -686,6 +674,24 @@ public class FileSystemSecurityRealmTest {
     }
 
     @Test
+    public void testVerifyCredentialsPreExistingIdentity() throws Exception {
+        byte[] aesByte = Base64.decode("Yfbq6A1FnRFNkh5bBzgptg==");
+        SecretKey staticKey = new SecretKeySpec(aesByte, "AES");
+        FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
+                .setRoot(getRootPath(false))
+                .setLevels(1)
+                .setHashEncoding(Encoding.BASE64)
+                .setHashCharset(Charset.defaultCharset())
+                .setSecretKey(staticKey)
+                .setProviders(ELYTRON_PASSWORD_PROVIDERS)
+                .build();
+        ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
+        assertTrue(existingIdentity.exists());
+        assertTrue(existingIdentity.verifyEvidence(new PasswordGuessEvidence("secretPassword".toCharArray())));
+        existingIdentity.dispose();
+    }
+
+    @Test
     public void testCreateIdentityWithEverythingEncryption() throws Exception {
         FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
                 .setRoot(getRootPath())
@@ -706,7 +712,7 @@ public class FileSystemSecurityRealmTest {
 
         List<Credential> credentials = new ArrayList<>();
 
-        PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT);
+        PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT, ELYTRON_PASSWORD_PROVIDERS);
         BCryptPassword bCryptPassword = (BCryptPassword) passwordFactory.generatePassword(
                 new EncryptablePasswordSpec("secretPassword".toCharArray(), new IteratedSaltedPasswordAlgorithmSpec(10, generateRandomSalt(BCRYPT_SALT_SIZE)))
         );
@@ -715,7 +721,7 @@ public class FileSystemSecurityRealmTest {
 
         byte[] hash = CodePointIterator.ofString("505d889f90085847").hexDecode().drain();
         String seed = "ke1234";
-        PasswordFactory otpFactory = PasswordFactory.getInstance(OneTimePassword.ALGORITHM_OTP_SHA1);
+        PasswordFactory otpFactory = PasswordFactory.getInstance(OneTimePassword.ALGORITHM_OTP_SHA1, ELYTRON_PASSWORD_PROVIDERS);
         OneTimePassword otpPassword = (OneTimePassword) otpFactory.generatePassword(
                 new OneTimePasswordSpec(hash, seed, 500)
         );
@@ -796,7 +802,7 @@ public class FileSystemSecurityRealmTest {
 
         List<Credential> credentials = new ArrayList<>();
 
-        PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT);
+        PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT, ELYTRON_PASSWORD_PROVIDERS);
         BCryptPassword bCryptPassword = (BCryptPassword) passwordFactory.generatePassword(
                 new EncryptablePasswordSpec("secretPassword".toCharArray(), new IteratedSaltedPasswordAlgorithmSpec(10, generateRandomSalt(BCRYPT_SALT_SIZE)))
         );
@@ -804,7 +810,7 @@ public class FileSystemSecurityRealmTest {
 
         byte[] hash = CodePointIterator.ofString("505d889f90085847").hexDecode().drain();
         String seed = "ke1234";
-        PasswordFactory otpFactory = PasswordFactory.getInstance(OneTimePassword.ALGORITHM_OTP_SHA1);
+        PasswordFactory otpFactory = PasswordFactory.getInstance(OneTimePassword.ALGORITHM_OTP_SHA1, ELYTRON_PASSWORD_PROVIDERS);
         OneTimePassword otpPassword = (OneTimePassword) otpFactory.generatePassword(
                 new OneTimePasswordSpec(hash, seed, 500)
         );
@@ -921,7 +927,7 @@ public class FileSystemSecurityRealmTest {
     @Test
     public void testMismatchSecretKey() throws Exception {
         char[] actualPassword = "secretPassword".toCharArray();
-        PasswordFactory factory = PasswordFactory.getInstance(ClearPassword.ALGORITHM_CLEAR);
+        PasswordFactory factory = PasswordFactory.getInstance(ClearPassword.ALGORITHM_CLEAR, ELYTRON_PASSWORD_PROVIDERS);
         ClearPassword clearPassword = (ClearPassword) factory.generatePassword(new ClearPasswordSpec(actualPassword));
         FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
                 .setRoot(getRootPath())
@@ -997,6 +1003,7 @@ public class FileSystemSecurityRealmTest {
                 .setHashEncoding(hashEncoding)
                 .setHashCharset(hashCharset)
                 .setSecretKey(secretKey)
+                .setProviders(ELYTRON_PASSWORD_PROVIDERS)
                 .build();
         ModifiableRealmIdentity newIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
         newIdentity.create();
@@ -1009,6 +1016,7 @@ public class FileSystemSecurityRealmTest {
                 .setHashEncoding(hashEncoding)
                 .setHashCharset(hashCharset)
                 .setSecretKey(secretKey)
+                .setProviders(ELYTRON_PASSWORD_PROVIDERS)
                 .build();
         ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
         assertTrue(existingIdentity.exists());
