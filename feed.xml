@@ -5,7 +5,21 @@
         <title>WildFly Elytron</title>
         <link>https://wildfly-security.github.io/wildfly-elytron</link>
         <description></description>
-        <lastBuildDate>Wed, 08 Jun 2022 20:43:43 +0000</lastBuildDate>
+        <lastBuildDate>Wed, 08 Jun 2022 21:28:15 +0000</lastBuildDate>
+        
+        <item>
+            <title>Enabling Integrity on Filesystem realms</title>
+            <link>
+                https://wildfly-security.github.io/wildfly-elytron/blog/filesystem-integrity/
+            </link>
+            <description>
+                Previously, any data in the filesystem realm was not verified, this meant that anyone with access to the filesystem identity files could tamper with the data in file, without any way of knowing it has been tampered with. Now filesystem integrity has been added by generating a signature via a...
+            </description>
+            <pubDate>Wed, 08 Jun 2022 00:00:00 +0000</pubDate>
+            <guid>
+                https://wildfly-security.github.io/wildfly-elytron/blog/filesystem-integrity/
+            </guid>
+        </item>
         
         <item>
             <title>New Security Features in WildFly 26.1</title>
@@ -130,20 +144,6 @@
             <pubDate>Fri, 17 Dec 2021 00:00:00 +0000</pubDate>
             <guid>
                 https://wildfly-security.github.io/wildfly-elytron/blog/securing-wildfly-apps-openid-connect/
-            </guid>
-        </item>
-        
-        <item>
-            <title>New Security Features in WildFly</title>
-            <link>
-                https://wildfly-security.github.io/wildfly-elytron/blog/new-security-features-wildfly/
-            </link>
-            <description>
-                Since WildFly 26 was just released, we wanted to highlight a new security feature included in this release and a few other security features as well. Support for JAAS Security Realms in WildFly 26 WildFly 26 now adds support for JAAS security realms to the Elytron subsystem. This means that...
-            </description>
-            <pubDate>Fri, 17 Dec 2021 00:00:00 +0000</pubDate>
-            <guid>
-                https://wildfly-security.github.io/wildfly-elytron/blog/new-security-features-wildfly/
             </guid>
         </item>
         
