@@ -207,14 +207,14 @@ cd elytron-examples</code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>We&#8217;ll be looking at the <strong><a href="https://github.com/wildfly-security-incubator/elytron-examples/blob/master/encryption-integrity-filesystem-realm">encryption-integrity-filesystem-realm</a></strong></p>
+<p>We&#8217;ll be looking at the <strong><a href="https://github.com/wildfly-security-incubator/elytron-examples/blob/master/integrity-filesystem-realm">integrity-filesystem-realm</a></strong></p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="server-configuration"><a class="anchor" href="#server-configuration"></a>Server Configuration</h3>
 <div class="paragraph">
 <p>In the following section, we will review the configuration available in the script for the quickstart
-<strong><a href="https://github.com/wildfly-security-incubator/elytron-examples/blob/master/encryption-integrity-filesystem-realm/configure-elytron.cli">configure-elytron.cli</a></strong>. We start our configuration by connecting to the server using the following command:</p>
+<strong><a href="https://github.com/wildfly-security-incubator/elytron-examples/blob/master/integrity-filesystem-realm/configure-elytron.cli">configure-elytron.cli</a></strong>. We start our configuration by connecting to the server using the following command:</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -289,7 +289,7 @@ FileSystem realm and role-decoder to it.
 <div class="sect2">
 <h3 id="deploying-to-app-to-wildfly"><a class="anchor" href="#deploying-to-app-to-wildfly"></a>Deploying to app to WildFly</h3>
 <div class="paragraph">
-<p>From the root directory of the <strong><a href="https://github.com/wildfly-security-incubator/elytron-examples/blob/master/encryption-filesystem-realm/">quickstart example</a></strong> run the following command the deploy the web application to wildfly</p>
+<p>From the root directory of the <strong><a href="https://github.com/wildfly-security-incubator/elytron-examples/blob/master/integrity-filesystem-realm/">quickstart example</a></strong> run the following command the deploy the web application to wildfly</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -298,15 +298,15 @@ FileSystem realm and role-decoder to it.
 </div>
 </div>
 <div class="sect2">
-<h3 id="verifying-encryption"><a class="anchor" href="#verifying-encryption"></a>Verifying Encryption</h3>
+<h3 id="verifying-integrity"><a class="anchor" href="#verifying-integrity"></a>Verifying Integrity</h3>
 <div class="paragraph">
-<p>Now you may navigate to <code><a href="http://localhost:8080/encryption-filesystem" class="bare">http://localhost:8080/encryption-filesystem</a></code>, and when it prompt&#8217;s you to enter a username and password, put in the credentials we specified earlier, <code>quickstartUser</code>, and <code>password123!</code>. This should authenticate you to a page that shows you the principal you&#8217;re logged in with.</p>
+<p>Now you may navigate to <code><a href="http://localhost:8080/integrity-filesystem" class="bare">http://localhost:8080/integrity-filesystem</a></code>, and when it prompt&#8217;s you to enter a username and password, put in the credentials we specified earlier, <code>quickstartUser</code>, and <code>password123!</code>. This should authenticate you to a page that shows you the principal you&#8217;re logged in with.</p>
 </div>
 <div class="paragraph">
-<p>The successful login indicates that encryption has been configured correctly.</p>
+<p>The successful login indicates that integrity has been configured correctly.</p>
 </div>
 <div class="paragraph">
-<p>In order to further verify that these features are being used correctly we can navigate to the identity file and check the contents. The file should be located at <code>WILDFLY_HOME/standalone/configuration/fs-realm/q/u/quickstartUser.xml</code> if the same filesystem realm and identity configuration was used.</p>
+<p>In order to further verify that these features are being used correctly we can navigate to the identity file and check the contents. The file should be located at <code>WILDFLY_HOME/standalone/configuration/fs-realm/q/u/quickstartuser-OF2WSY3LON2GC4TUKVZWK4Q.xml</code> if the same filesystem realm and identity configuration was used.</p>
 </div>
 <div class="paragraph">
 <p>Here we can see in the format we have a <code>&lt;principal /&gt;</code> tag specifying the principal name to ensure it matches with the file name, as well as a <code>&lt;Signature&gt;</code> tag. The format for the signature tag should look like the following</p>
