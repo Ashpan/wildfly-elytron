@@ -119,7 +119,6 @@ public class FileSystemSecurityRealmTest {
         assertTrue(identity.exists());
     }
 
-
     @Test
     public void testCreateIdentityWithLevels() throws Exception {
         FileSystemSecurityRealm securityRealm = new FileSystemSecurityRealm(getRootPath(), 3, ELYTRON_PASSWORD_PROVIDERS);
@@ -131,7 +130,23 @@ public class FileSystemSecurityRealmTest {
         identity.dispose();
     }
 
-   @Test
+    @Test
+    public void testCreateIdentityWithLevelsEncryption() throws Exception {
+        FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
+                .setRoot(getRootPath())
+                .setLevels(3)
+                .setProviders(ELYTRON_PASSWORD_PROVIDERS)
+                .setSecretKey(secretKey)
+                .build();
+        ModifiableRealmIdentity identity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
+        assertFalse(identity.exists());
+        identity.create();
+
+        assertTrue(identity.exists());
+        identity.dispose();
+    }
+
+    @Test
     public void testCreateIdentityWithLevelsIntegrity() throws Exception {
         FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
                 .setRoot(getRootPath())
@@ -163,22 +178,11 @@ public class FileSystemSecurityRealmTest {
 
     @Test
     public void testCreateAndLoadIdentityEncryption() throws Exception {
-        FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath())
-                .setLevels(3)
-                .setProviders(ELYTRON_PASSWORD_PROVIDERS)
-                .setSecretKey(secretKey)
-                .build();
+        FileSystemSecurityRealm securityRealm = getBuilder(secretKey).build();
         ModifiableRealmIdentity newIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
         newIdentity.create();
         newIdentity.dispose();
 
-        securityRealm = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath(false))
-                .setLevels(3)
-                .setProviders(ELYTRON_PASSWORD_PROVIDERS)
-                .setSecretKey(secretKey)
-                .build();
         ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
         assertTrue(existingIdentity.exists());
         existingIdentity.dispose();
@@ -186,24 +190,11 @@ public class FileSystemSecurityRealmTest {
 
     @Test
     public void testCreateAndLoadIdentityIntegrity() throws Exception {
-        FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath())
-                .setLevels(3)
-                .setPrivateKey(privateKey)
-                .setPublicKey(publicKey)
-                .setProviders(ELYTRON_PASSWORD_PROVIDERS)
-                .build();
+        FileSystemSecurityRealm securityRealm = getBuilder(privateKey, publicKey).build();
         ModifiableRealmIdentity newIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
         newIdentity.create();
         newIdentity.dispose();
 
-        securityRealm = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath(false))
-                .setLevels(3)
-                .setPrivateKey(privateKey)
-                .setPublicKey(publicKey)
-                .setProviders(ELYTRON_PASSWORD_PROVIDERS)
-                .build();
         ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
         assertTrue(existingIdentity.exists());
         existingIdentity.dispose();
@@ -224,17 +215,6 @@ public class FileSystemSecurityRealmTest {
         existingIdentity.dispose();
     }
 
-    private void shortUsername(FileSystemSecurityRealm securityRealm) throws Exception {
-        ModifiableRealmIdentity newIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("p"));
-        newIdentity.create();
-
-        newIdentity.dispose();
-
-        ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("p"));
-        assertTrue(existingIdentity.exists());
-        existingIdentity.dispose();
-    }
-
     @Test
     public void testShortUsername() throws Exception {
         FileSystemSecurityRealm securityRealm = new FileSystemSecurityRealm(getRootPath(), 3, ELYTRON_PASSWORD_PROVIDERS);
@@ -243,35 +223,14 @@ public class FileSystemSecurityRealmTest {
 
     @Test
     public void testShortUsernameEncryption() throws Exception {
-        FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath())
-                .setLevels(3)
-                .setProviders(ELYTRON_PASSWORD_PROVIDERS)
-                .setSecretKey(secretKey)
-                .build();
+        FileSystemSecurityRealm securityRealm = getBuilder(secretKey).build();
         shortUsername(securityRealm);
     }
 
-   @Test
+    @Test
     public void testShortUsernameIntegrity() throws Exception {
-        FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath())
-                .setLevels(3)
-                .setPrivateKey(privateKey)
-                .setPublicKey(publicKey)
-                .setProviders(ELYTRON_PASSWORD_PROVIDERS)
-                .build();
+        FileSystemSecurityRealm securityRealm = getBuilder(privateKey, publicKey).build();
         shortUsername(securityRealm);
-    }
-
-    private void specialCharacters(FileSystemSecurityRealm securityRealm) throws Exception{
-        ModifiableRealmIdentity newIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("special*.\"/\\[]:;|=,用戶 "));
-        newIdentity.create();
-        newIdentity.dispose();
-
-        ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("special*.\"/\\[]:;|=,用戶 "));
-        assertTrue(existingIdentity.exists());
-        existingIdentity.dispose();
     }
 
     @Test
@@ -282,36 +241,14 @@ public class FileSystemSecurityRealmTest {
 
     @Test
     public void testSpecialCharactersEncryption() throws Exception {
-        FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath())
-                .setLevels(3)
-                .setSecretKey(secretKey)
-                .setProviders(ELYTRON_PASSWORD_PROVIDERS)
-                .build();
+        FileSystemSecurityRealm securityRealm = getBuilder(secretKey).build();
         specialCharacters(securityRealm);
     }
 
-   @Test
+    @Test
     public void testSpecialCharactersIntegrity() throws Exception {
-        FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath())
-                .setLevels(3)
-                .setPublicKey(publicKey)
-                .setPrivateKey(privateKey)
-                .setProviders(ELYTRON_PASSWORD_PROVIDERS)
-                .build();
+        FileSystemSecurityRealm securityRealm = getBuilder(privateKey, publicKey).build();
         specialCharacters(securityRealm);
-    }
-
-    private void caseSensitive(FileSystemSecurityRealm securityRealm) throws Exception {
-        ModifiableRealmIdentity newIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
-        newIdentity.create();
-        assertTrue(newIdentity.exists());
-        newIdentity.dispose();
-
-        ModifiableRealmIdentity differentIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("PLAINUSER"));
-        assertFalse(differentIdentity.exists());
-        differentIdentity.dispose();
     }
 
     @Test
@@ -322,134 +259,44 @@ public class FileSystemSecurityRealmTest {
 
     @Test
     public void testCaseSensitiveEncryption() throws Exception {
-        FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath())
-                .setLevels(3)
-                .setProviders(ELYTRON_PASSWORD_PROVIDERS)
-                .setSecretKey(secretKey)
-                .build();
+        FileSystemSecurityRealm securityRealm = getBuilder(privateKey, publicKey).build();
         caseSensitive(securityRealm);
     }
 
     @Test
     public void testCaseSensitiveIntegrity() throws Exception {
-        FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath())
-                .setLevels(3)
-                .setPrivateKey(privateKey)
-                .setPublicKey(publicKey)
-                .setProviders(ELYTRON_PASSWORD_PROVIDERS)
-                .build();
+        FileSystemSecurityRealm securityRealm = getBuilder(privateKey, publicKey).build();
         caseSensitive(securityRealm);
     }
 
-    private void createAndLoadAndDeleteIdentity(String mode) throws Exception {
-        FileSystemSecurityRealmBuilder securityRealmBuilder = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath())
-                .setLevels(3)
-                .setProviders(ELYTRON_PASSWORD_PROVIDERS);
-        if (mode.equals("encryption")) { securityRealmBuilder.setSecretKey(secretKey); }
-        else if (mode.equals("integrity")) { securityRealmBuilder.setPrivateKey(privateKey); securityRealmBuilder.setPublicKey(publicKey); }
-
-        FileSystemSecurityRealm securityRealm = securityRealmBuilder.build();
-        ModifiableRealmIdentity newIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
-        newIdentity.create();
-        newIdentity.dispose();
-
-        securityRealmBuilder = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath(false))
-                .setLevels(3)
-                .setProviders(ELYTRON_PASSWORD_PROVIDERS);
-        if (mode.equals("encryption")) { securityRealmBuilder.setSecretKey(secretKey); }
-        else if (mode.equals("integrity")) { securityRealmBuilder.setPrivateKey(privateKey); securityRealmBuilder.setPublicKey(publicKey); }
-        securityRealm = securityRealmBuilder.build();
-
-        ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
-        assertTrue(existingIdentity.exists());
-        existingIdentity.delete();
-        assertFalse(existingIdentity.exists());
-        existingIdentity.dispose();
-
-        securityRealmBuilder = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath(false))
-                .setLevels(3)
-                .setProviders(ELYTRON_PASSWORD_PROVIDERS);
-        if (mode.equals("encryption")) { securityRealmBuilder.setSecretKey(secretKey); }
-        else if (mode.equals("integrity")) { securityRealmBuilder.setPrivateKey(privateKey); securityRealmBuilder.setPublicKey(publicKey); }
-        securityRealm = securityRealmBuilder.build();
-        existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
-        assertFalse(existingIdentity.exists());
-        existingIdentity.dispose();
-    }
-
-
-
     @Test
     public void testCreateAndLoadAndDeleteIdentity() throws Exception {
-        createAndLoadAndDeleteIdentity("");
+        createAndLoadAndDeleteIdentity(null, null, null);
     }
 
     @Test
     public void testCreateAndLoadAndDeleteIdentityEncryption() throws Exception {
-        createAndLoadAndDeleteIdentity("encryption");
+        createAndLoadAndDeleteIdentity(secretKey, null, null);
     }
 
-   @Test
+    @Test
     public void testCreateAndLoadAndDeleteIdentityIntegrity() throws Exception {
-        createAndLoadAndDeleteIdentity("integrity");
-    }
-
-    private void createIdentityWithAttributes(String mode) throws Exception {
-        FileSystemSecurityRealmBuilder securityRealmBuilder = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath())
-                .setLevels(1)
-                .setProviders(ELYTRON_PASSWORD_PROVIDERS);
-        if (mode.equals("encryption")) { securityRealmBuilder.setSecretKey(secretKey); }
-        else if (mode.equals("integrity")) { securityRealmBuilder.setPrivateKey(privateKey); securityRealmBuilder.setPublicKey(publicKey); }
-        FileSystemSecurityRealm securityRealm = securityRealmBuilder.build();
-        ModifiableRealmIdentity newIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
-
-        newIdentity.create();
-
-        MapAttributes newAttributes = new MapAttributes();
-
-        newAttributes.addFirst("name", "plainUser");
-        newAttributes.addAll("roles", Arrays.asList("Employee", "Manager", "Admin"));
-
-        newIdentity.setAttributes(newAttributes);
-        newIdentity.dispose();
-
-        securityRealmBuilder = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath(false))
-                .setLevels(1)
-                .setProviders(ELYTRON_PASSWORD_PROVIDERS);
-        if (mode.equals("encryption")) { securityRealmBuilder.setSecretKey(secretKey); }
-        else if (mode.equals("integrity")) { securityRealmBuilder.setPrivateKey(privateKey); securityRealmBuilder.setPublicKey(publicKey); }
-        securityRealm = securityRealmBuilder.build();
-
-        ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
-        AuthorizationIdentity authorizationIdentity = existingIdentity.getAuthorizationIdentity();
-        Attributes existingAttributes = authorizationIdentity.getAttributes();
-        existingIdentity.dispose();
-
-        assertEquals(newAttributes.size(), existingAttributes.size());
-        assertTrue(newAttributes.get("name").containsAll(existingAttributes.get("name")));
-        assertTrue(newAttributes.get("roles").containsAll(existingAttributes.get("roles")));
+        createAndLoadAndDeleteIdentity(null, privateKey, publicKey);
     }
 
     @Test
     public void testCreateIdentityWithAttributes() throws Exception {
-        createIdentityWithAttributes("");
+        createIdentityWithAttributes(null, null, null);
     }
 
     @Test
     public void testCreateIdentityWithAttributesEncryption() throws Exception {
-        createIdentityWithAttributes("encryption");
+        createIdentityWithAttributes(secretKey, null, null);
     }
 
     @Test
     public void testCreateIdentityWithAttributesIntegrity() throws Exception {
-        createIdentityWithAttributes("integrity");
+        createIdentityWithAttributes(null, privateKey, publicKey);
     }
 
     @Test
@@ -470,7 +317,7 @@ public class FileSystemSecurityRealmTest {
         assertCreateIdentityWithPassword(actualPassword, clearPassword, secretKey);
     }
 
-   @Test
+    @Test
     public void testCreateIdentityWithClearPasswordIntegrity() throws Exception {
         char[] actualPassword = "secretPassword".toCharArray();
         PasswordFactory factory = PasswordFactory.getInstance(ClearPassword.ALGORITHM_CLEAR, ELYTRON_PASSWORD_PROVIDERS);
@@ -501,7 +348,7 @@ public class FileSystemSecurityRealmTest {
         assertCreateIdentityWithPassword(actualPassword, bCryptPassword, secretKey);
     }
 
-   @Test
+    @Test
     public void testCreateIdentityWithBcryptCredentialIntegrity() throws Exception {
         PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT, ELYTRON_PASSWORD_PROVIDERS);
         char[] actualPassword = "secretPassword".toCharArray();
@@ -532,7 +379,7 @@ public class FileSystemSecurityRealmTest {
         assertCreateIdentityWithPassword(actualPassword, bCryptPassword, Encoding.HEX, StandardCharsets.UTF_8, secretKey);
     }
 
-   @Test
+    @Test
     public void testCreateIdentityWithBcryptCredentialHexEncodedIntegrity() throws Exception {
         PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT, ELYTRON_PASSWORD_PROVIDERS);
         char[] actualPassword = "secretPassword".toCharArray();
@@ -564,7 +411,7 @@ public class FileSystemSecurityRealmTest {
         assertCreateIdentityWithPassword(actualPassword, bCryptPassword, Encoding.BASE64, Charset.forName("gb2312"), secretKey);
     }
 
-   @Test
+    @Test
     public void testCreateIdentityWithBcryptCredentialBase64AndCharsetIntegrity() throws Exception {
         PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT, ELYTRON_PASSWORD_PROVIDERS);
         char[] actualPassword = "password密码".toCharArray();
@@ -608,7 +455,7 @@ public class FileSystemSecurityRealmTest {
         assertCreateIdentityWithPassword(actualPassword, scramPassword, secretKey);
     }
 
-   @Test
+    @Test
     public void testCreateIdentityWithScramCredentialIntegrity() throws Exception {
         char[] actualPassword = "secretPassword".toCharArray();
         byte[] salt = generateRandomSalt(BCRYPT_SALT_SIZE);
@@ -664,7 +511,7 @@ public class FileSystemSecurityRealmTest {
         assertCreateIdentityWithPassword(actualPassword, digestPassword, secretKey);
     }
 
-   @Test
+    @Test
     public void testCreateIdentityWithDigestIntegrity() throws Exception {
         char[] actualPassword = "secretPassword".toCharArray();
         PasswordFactory factory = PasswordFactory.getInstance(DigestPassword.ALGORITHM_DIGEST_SHA_512, ELYTRON_PASSWORD_PROVIDERS);
@@ -708,7 +555,7 @@ public class FileSystemSecurityRealmTest {
         assertCreateIdentityWithPassword(actualPassword, digestPassword, Encoding.HEX, Charset.forName("KOI8-R"), secretKey);
     }
 
-   @Test
+    @Test
     public void testCreateIdentityWithDigestHexEncodedAndCharsetIntegrity() throws Exception {
         char[] actualPassword = "secretPassword".toCharArray();
         PasswordFactory factory = PasswordFactory.getInstance(DigestPassword.ALGORITHM_DIGEST_SHA_512, ELYTRON_PASSWORD_PROVIDERS);
@@ -797,7 +644,7 @@ public class FileSystemSecurityRealmTest {
         assertCreateIdentityWithPassword(actualPassword, tsdp, Encoding.HEX, Charset.forName("gb2312"), secretKey);
     }
 
-   @Test
+    @Test
     public void testCreateIdentityWithSimpleSaltedDigestHexEncodedAndCharsetIntegrity() throws Exception {
         char[] actualPassword = "password密码".toCharArray();
         byte[] salt = generateRandomSalt(BCRYPT_SALT_SIZE);
@@ -809,13 +656,124 @@ public class FileSystemSecurityRealmTest {
         assertCreateIdentityWithPassword(actualPassword, tsdp, Encoding.HEX, Charset.forName("gb2312"), publicKey, privateKey);
     }
 
-    private void createIdentityWithEverything(String mode) throws Exception {
+    @Test
+    public void testCreateIdentityWithEverything() throws Exception {
+        createIdentityWithEverything(null, null, null);
+    }
+
+    @Test
+    public void testCreateIdentityWithEverythingEncryption() throws Exception {
+        createIdentityWithEverything(secretKey, null, null);
+    }
+
+    @Test
+    public void testCreateIdentityWithEverythingIntegrity() throws Exception {
+        createIdentityWithEverything(null, privateKey, publicKey);
+    }
+
+    @Test
+    public void testCreateIdentityWithEverythingEncryptionAndIntegrity() throws Exception {
+        createIdentityWithEverything(null, privateKey, publicKey);
+    }
+
+    @Test
+    public void testVerifyCredentialsPreExistingIdentity() throws Exception {
+        byte[] aesByte = Base64.decode("3fMEsUHKCn3GZQXcHCyuhQ==");
+        SecretKey staticKey = new SecretKeySpec(aesByte, "AES");
+        FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
+                .setRoot(Paths.get("./target/test-classes/filesystem-realm-exists/"))
+                .setLevels(1)
+                .setHashEncoding(Encoding.BASE64)
+                .setHashCharset(Charset.defaultCharset())
+                .setSecretKey(staticKey)
+                .setProviders(ELYTRON_PASSWORD_PROVIDERS)
+                .build();
+        ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
+        assertTrue(existingIdentity.exists());
+        assertTrue(existingIdentity.verifyEvidence(new PasswordGuessEvidence("secretPassword".toCharArray())));
+
+        Attributes identityAttributes = existingIdentity.getAttributes();
+        MapAttributes newAttributes = new MapAttributes();
+        newAttributes.addFirst("firstName", "John");
+        newAttributes.addFirst("lastName", "Smith");
+        newAttributes.addAll("roles", Arrays.asList("Employee", "Manager", "Admin"));
+        assertEquals(newAttributes.size(), identityAttributes.size());
+        assertTrue(newAttributes.get("firstName").containsAll(identityAttributes.get("firstName")));
+        assertTrue(newAttributes.get("lastName").containsAll(identityAttributes.get("lastName")));
+        assertTrue(newAttributes.get("roles").containsAll(identityAttributes.get("roles")));
+        existingIdentity.dispose();
+    }
+
+    @Test
+    public void testCredentialReplacing() throws Exception {
+        credentialReplacing(null, null, null);
+    }
+
+    @Test
+    public void testCredentialReplacingEncryption() throws Exception {
+        credentialReplacing(secretKey, null, null);
+    }
+
+    @Test
+    public void testCredentialReplacingIntegrity() throws Exception {
+        credentialReplacing(null, privateKey, publicKey);
+    }
+
+    private void credentialReplacing(SecretKey secretKey, PrivateKey privateKey, PublicKey publicKey) throws Exception {
+        assertFalse(privateKey != null ^ publicKey != null);
         FileSystemSecurityRealmBuilder securityRealmBuilder = FileSystemSecurityRealm.builder()
                 .setRoot(getRootPath())
                 .setLevels(1)
                 .setProviders(ELYTRON_PASSWORD_PROVIDERS);
-        if (mode.equals("encryption") || mode.equals("both")) { securityRealmBuilder.setSecretKey(secretKey); }
-        if (mode.equals("integrity") || mode.equals("both")) { securityRealmBuilder.setPrivateKey(privateKey); securityRealmBuilder.setPublicKey(publicKey); }
+        if (secretKey != null) { securityRealmBuilder.setSecretKey(secretKey); }
+        else if (privateKey != null) { securityRealmBuilder.setPrivateKey(privateKey); securityRealmBuilder.setPublicKey(publicKey); }
+        FileSystemSecurityRealm securityRealm = securityRealmBuilder.build();
+
+        ModifiableRealmIdentity identity1 = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("testingUser"));
+        identity1.create();
+
+        List<Credential> credentials = new ArrayList<>();
+
+        PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT, ELYTRON_PASSWORD_PROVIDERS);
+        BCryptPassword bCryptPassword = (BCryptPassword) passwordFactory.generatePassword(
+                new EncryptablePasswordSpec("secretPassword".toCharArray(), new IteratedSaltedPasswordAlgorithmSpec(10, generateRandomSalt(BCRYPT_SALT_SIZE)))
+        );
+        credentials.add(new PasswordCredential(bCryptPassword));
+
+        byte[] hash = CodePointIterator.ofString("505d889f90085847").hexDecode().drain();
+        String seed = "ke1234";
+        PasswordFactory otpFactory = PasswordFactory.getInstance(OneTimePassword.ALGORITHM_OTP_SHA1, ELYTRON_PASSWORD_PROVIDERS);
+        OneTimePassword otpPassword = (OneTimePassword) otpFactory.generatePassword(
+                new OneTimePasswordSpec(hash, seed, 500)
+        );
+        credentials.add(new PasswordCredential(otpPassword));
+
+        identity1.setCredentials(credentials);
+        identity1.dispose();
+
+        // checking result
+        securityRealmBuilder = FileSystemSecurityRealm.builder()
+                .setRoot(getRootPath(false))
+                .setLevels(1)
+                .setProviders(ELYTRON_PASSWORD_PROVIDERS);
+        if (secretKey != null) { securityRealmBuilder.setSecretKey(secretKey); }
+        else if (privateKey != null) { securityRealmBuilder.setPrivateKey(privateKey); securityRealmBuilder.setPublicKey(publicKey); }
+        securityRealm = securityRealmBuilder.build();
+        ModifiableRealmIdentity identity3 = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("testingUser"));
+
+        assertTrue(identity3.exists());
+        assertTrue(identity3.verifyEvidence(new PasswordGuessEvidence("secretPassword".toCharArray())));
+        identity3.dispose();
+    }
+
+    private void createIdentityWithEverything(SecretKey secretKey, PrivateKey privateKey, PublicKey publicKey) throws Exception {
+        assertFalse(privateKey != null ^ publicKey != null);
+        FileSystemSecurityRealmBuilder securityRealmBuilder = FileSystemSecurityRealm.builder()
+                .setRoot(getRootPath())
+                .setLevels(1)
+                .setProviders(ELYTRON_PASSWORD_PROVIDERS);
+        if (secretKey != null) { securityRealmBuilder.setSecretKey(secretKey); }
+        if (privateKey != null) { securityRealmBuilder.setPrivateKey(privateKey); securityRealmBuilder.setPublicKey(publicKey); }
         FileSystemSecurityRealm securityRealm = securityRealmBuilder.build();
         ModifiableRealmIdentity newIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
 
@@ -853,8 +811,8 @@ public class FileSystemSecurityRealmTest {
                 .setRoot(getRootPath(false))
                 .setLevels(1)
                 .setProviders(ELYTRON_PASSWORD_PROVIDERS);
-        if (mode.equals("encryption") || mode.equals("both")) { securityRealmBuilder.setSecretKey(secretKey); }
-        if (mode.equals("integrity") || mode.equals("both")) { securityRealmBuilder.setPrivateKey(privateKey); securityRealmBuilder.setPublicKey(publicKey); }
+        if (secretKey != null) { securityRealmBuilder.setSecretKey(secretKey); }
+        if (privateKey != null) { securityRealmBuilder.setPrivateKey(privateKey); securityRealmBuilder.setPublicKey(publicKey); }
         securityRealm = securityRealmBuilder.build();
         ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
         assertTrue(existingIdentity.exists());
@@ -877,113 +835,115 @@ public class FileSystemSecurityRealmTest {
         assertTrue(newAttributes.get("roles").containsAll(existingAttributes.get("roles")));
     }
 
-    @Test
-    public void testCreateIdentityWithEverything() throws Exception {
-        createIdentityWithEverything("");
-    }
-
-    @Test
-    public void testVerifyCredentialsPreExistingIdentity() throws Exception {
-        byte[] aesByte = Base64.decode("3fMEsUHKCn3GZQXcHCyuhQ==");
-        SecretKey staticKey = new SecretKeySpec(aesByte, "AES");
-        FileSystemSecurityRealm securityRealm = FileSystemSecurityRealm.builder()
-                .setRoot(Paths.get("./target/test-classes/filesystem-realm-exists/"))
-                .setLevels(1)
-                .setHashEncoding(Encoding.BASE64)
-                .setHashCharset(Charset.defaultCharset())
-                .setSecretKey(staticKey)
-                .setProviders(ELYTRON_PASSWORD_PROVIDERS)
-                .build();
-        ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
-        assertTrue(existingIdentity.exists());
-        assertTrue(existingIdentity.verifyEvidence(new PasswordGuessEvidence("secretPassword".toCharArray())));
-
-        Attributes identityAttributes = existingIdentity.getAttributes();
-        MapAttributes newAttributes = new MapAttributes();
-        newAttributes.addFirst("firstName", "John");
-        newAttributes.addFirst("lastName", "Smith");
-        newAttributes.addAll("roles", Arrays.asList("Employee", "Manager", "Admin"));
-        assertEquals(newAttributes.size(), identityAttributes.size());
-        assertTrue(newAttributes.get("firstName").containsAll(identityAttributes.get("firstName")));
-        assertTrue(newAttributes.get("lastName").containsAll(identityAttributes.get("lastName")));
-        assertTrue(newAttributes.get("roles").containsAll(identityAttributes.get("roles")));
-        existingIdentity.dispose();
-    }
-
-    @Test
-    public void testCreateIdentityWithEverythingEncryption() throws Exception {
-        createIdentityWithEverything("encryption");
-    }
-
-    @Test
-    public void testCreateIdentityWithEverythingIntegrity() throws Exception {
-        createIdentityWithEverything("integrity");
-    }
-
-    @Test
-    public void testCreateIdentityWithEverythingEncryptionAndIntegrity() throws Exception {
-        createIdentityWithEverything("both");
-    }
-
-    private void credentialReplacing(String mode) throws Exception {
+    private void createIdentityWithAttributes(SecretKey secretKey, PrivateKey privateKey, PublicKey publicKey) throws Exception {
+        assertFalse(privateKey != null ^ publicKey != null);
         FileSystemSecurityRealmBuilder securityRealmBuilder = FileSystemSecurityRealm.builder()
                 .setRoot(getRootPath())
                 .setLevels(1)
                 .setProviders(ELYTRON_PASSWORD_PROVIDERS);
-        if (mode.equals("encryption")) { securityRealmBuilder.setSecretKey(secretKey); }
-        else if (mode.equals("integrity")) { securityRealmBuilder.setPrivateKey(privateKey); securityRealmBuilder.setPublicKey(publicKey); }
+        if (secretKey != null) { securityRealmBuilder.setSecretKey(secretKey); }
+        if (privateKey != null) { securityRealmBuilder.setPrivateKey(privateKey); securityRealmBuilder.setPublicKey(publicKey); }
         FileSystemSecurityRealm securityRealm = securityRealmBuilder.build();
+        ModifiableRealmIdentity newIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
 
-        ModifiableRealmIdentity identity1 = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("testingUser"));
-        identity1.create();
+        newIdentity.create();
 
-        List<Credential> credentials = new ArrayList<>();
+        MapAttributes newAttributes = new MapAttributes();
 
-        PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT, ELYTRON_PASSWORD_PROVIDERS);
-        BCryptPassword bCryptPassword = (BCryptPassword) passwordFactory.generatePassword(
-                new EncryptablePasswordSpec("secretPassword".toCharArray(), new IteratedSaltedPasswordAlgorithmSpec(10, generateRandomSalt(BCRYPT_SALT_SIZE)))
-        );
-        credentials.add(new PasswordCredential(bCryptPassword));
+        newAttributes.addFirst("name", "plainUser");
+        newAttributes.addAll("roles", Arrays.asList("Employee", "Manager", "Admin"));
 
-        byte[] hash = CodePointIterator.ofString("505d889f90085847").hexDecode().drain();
-        String seed = "ke1234";
-        PasswordFactory otpFactory = PasswordFactory.getInstance(OneTimePassword.ALGORITHM_OTP_SHA1, ELYTRON_PASSWORD_PROVIDERS);
-        OneTimePassword otpPassword = (OneTimePassword) otpFactory.generatePassword(
-                new OneTimePasswordSpec(hash, seed, 500)
-        );
-        credentials.add(new PasswordCredential(otpPassword));
+        newIdentity.setAttributes(newAttributes);
+        newIdentity.dispose();
 
-        identity1.setCredentials(credentials);
-        identity1.dispose();
-
-        // checking result
         securityRealmBuilder = FileSystemSecurityRealm.builder()
                 .setRoot(getRootPath(false))
                 .setLevels(1)
                 .setProviders(ELYTRON_PASSWORD_PROVIDERS);
-        if (mode.equals("encryption")) { securityRealmBuilder.setSecretKey(secretKey); }
-        else if (mode.equals("integrity")) { securityRealmBuilder.setPrivateKey(privateKey); securityRealmBuilder.setPublicKey(publicKey); }
+        if (secretKey != null) { securityRealmBuilder.setSecretKey(secretKey); }
+        if (privateKey != null) { securityRealmBuilder.setPrivateKey(privateKey); securityRealmBuilder.setPublicKey(publicKey); }
         securityRealm = securityRealmBuilder.build();
-        ModifiableRealmIdentity identity3 = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("testingUser"));
 
-        assertTrue(identity3.exists());
-        assertTrue(identity3.verifyEvidence(new PasswordGuessEvidence("secretPassword".toCharArray())));
-        identity3.dispose();
+        ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
+        AuthorizationIdentity authorizationIdentity = existingIdentity.getAuthorizationIdentity();
+        Attributes existingAttributes = authorizationIdentity.getAttributes();
+        existingIdentity.dispose();
+
+        assertEquals(newAttributes.size(), existingAttributes.size());
+        assertTrue(newAttributes.get("name").containsAll(existingAttributes.get("name")));
+        assertTrue(newAttributes.get("roles").containsAll(existingAttributes.get("roles")));
     }
 
-    @Test
-    public void testCredentialReplacing() throws Exception {
-        credentialReplacing("");
+    private void createAndLoadAndDeleteIdentity(SecretKey secretKey, PrivateKey privateKey, PublicKey publicKey) throws Exception {
+        assertFalse(privateKey != null ^ publicKey != null);
+        FileSystemSecurityRealmBuilder securityRealmBuilder = FileSystemSecurityRealm.builder()
+                .setRoot(getRootPath())
+                .setLevels(3)
+                .setProviders(ELYTRON_PASSWORD_PROVIDERS);
+        if (secretKey != null) { securityRealmBuilder.setSecretKey(secretKey); }
+        if (privateKey != null) { securityRealmBuilder.setPrivateKey(privateKey); securityRealmBuilder.setPublicKey(publicKey); }
+
+        FileSystemSecurityRealm securityRealm = securityRealmBuilder.build();
+        ModifiableRealmIdentity newIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
+        newIdentity.create();
+        newIdentity.dispose();
+
+        securityRealmBuilder = FileSystemSecurityRealm.builder()
+                .setRoot(getRootPath(false))
+                .setLevels(3)
+                .setProviders(ELYTRON_PASSWORD_PROVIDERS);
+        if (secretKey != null) { securityRealmBuilder.setSecretKey(secretKey); }
+        if (privateKey != null) { securityRealmBuilder.setPrivateKey(privateKey); securityRealmBuilder.setPublicKey(publicKey); }
+        securityRealm = securityRealmBuilder.build();
+
+        ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
+        assertTrue(existingIdentity.exists());
+        existingIdentity.delete();
+        assertFalse(existingIdentity.exists());
+        existingIdentity.dispose();
+
+        securityRealmBuilder = FileSystemSecurityRealm.builder()
+                .setRoot(getRootPath(false))
+                .setLevels(3)
+                .setProviders(ELYTRON_PASSWORD_PROVIDERS);
+        if (secretKey != null) { securityRealmBuilder.setSecretKey(secretKey); }
+        if (privateKey != null) { securityRealmBuilder.setPrivateKey(privateKey); securityRealmBuilder.setPublicKey(publicKey); }
+        securityRealm = securityRealmBuilder.build();
+        existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
+        assertFalse(existingIdentity.exists());
+        existingIdentity.dispose();
     }
 
-    @Test
-    public void testCredentialReplacingEncryption() throws Exception {
-        credentialReplacing("encryption");
+    private void specialCharacters(FileSystemSecurityRealm securityRealm) throws Exception{
+        ModifiableRealmIdentity newIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("special*.\"/\\[]:;|=,用戶 "));
+        newIdentity.create();
+        newIdentity.dispose();
+
+        ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("special*.\"/\\[]:;|=,用戶 "));
+        assertTrue(existingIdentity.exists());
+        existingIdentity.dispose();
     }
 
-   @Test
-    public void testCredentialReplacingIntegrity() throws Exception {
-        credentialReplacing("integrity");
+    private void shortUsername(FileSystemSecurityRealm securityRealm) throws Exception {
+        ModifiableRealmIdentity newIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("p"));
+        newIdentity.create();
+
+        newIdentity.dispose();
+
+        ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("p"));
+        assertTrue(existingIdentity.exists());
+        existingIdentity.dispose();
+    }
+
+    private void caseSensitive(FileSystemSecurityRealm securityRealm) throws Exception {
+        ModifiableRealmIdentity newIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
+        newIdentity.create();
+        assertTrue(newIdentity.exists());
+        newIdentity.dispose();
+
+        ModifiableRealmIdentity differentIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("PLAINUSER"));
+        assertFalse(differentIdentity.exists());
+        differentIdentity.dispose();
     }
 
     private FileSystemSecurityRealm createRealmWithTwoIdentities() throws Exception {
@@ -1028,6 +988,27 @@ public class FileSystemSecurityRealmTest {
         identity2.create();
         identity2.dispose();
         return securityRealm;
+    }
+
+    private FileSystemSecurityRealmBuilder getBuilder(SecretKey secretKey, PrivateKey privateKey, PublicKey publicKey) throws Exception {
+        FileSystemSecurityRealmBuilder securityRealmBuilder = FileSystemSecurityRealm.builder()
+                .setRoot(getRootPath(false))
+                .setProviders(ELYTRON_PASSWORD_PROVIDERS);
+        if (secretKey != null) {
+            securityRealmBuilder.setSecretKey(secretKey);
+        }
+        if (privateKey != null && publicKey != null) {
+            securityRealmBuilder.setPrivateKey(privateKey).setPublicKey(publicKey);
+        }
+        return securityRealmBuilder;
+    }
+
+    private FileSystemSecurityRealmBuilder getBuilder(SecretKey secretKey) throws Exception {
+        return getBuilder(secretKey, null, null);
+    }
+
+    private FileSystemSecurityRealmBuilder getBuilder(PrivateKey privateKey, PublicKey publicKey) throws Exception {
+        return getBuilder(null, privateKey, publicKey);
     }
 
     @Test
@@ -1272,14 +1253,6 @@ public class FileSystemSecurityRealmTest {
         newIdentity.setCredentials(Collections.singleton(new PasswordCredential(credential)));
         newIdentity.dispose();
 
-        securityRealm = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath(false))
-                .setLevels(1)
-                .setHashEncoding(hashEncoding)
-                .setHashCharset(hashCharset)
-                .setSecretKey(secretKey)
-                .setProviders(ELYTRON_PASSWORD_PROVIDERS)
-                .build();
         ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
         assertTrue(existingIdentity.exists());
         assertTrue(existingIdentity.verifyEvidence(new PasswordGuessEvidence(actualPassword)));
@@ -1301,15 +1274,6 @@ public class FileSystemSecurityRealmTest {
         newIdentity.setCredentials(Collections.singleton(new PasswordCredential(credential)));
         newIdentity.dispose();
 
-        securityRealm = FileSystemSecurityRealm.builder()
-                .setRoot(getRootPath(false))
-                .setLevels(1)
-                .setHashEncoding(hashEncoding)
-                .setHashCharset(hashCharset)
-                .setProviders(ELYTRON_PASSWORD_PROVIDERS)
-                .setPublicKey(publicKey)
-                .setPrivateKey(privateKey)
-                .build();
         ModifiableRealmIdentity existingIdentity = securityRealm.getRealmIdentityForUpdate(new NamePrincipal("plainUser"));
         assertTrue(existingIdentity.exists());
         assertTrue(existingIdentity.verifyEvidence(new PasswordGuessEvidence(actualPassword)));
