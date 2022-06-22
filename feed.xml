@@ -5,7 +5,7 @@
         <title>WildFly Elytron</title>
         <link>https://wildfly-security.github.io/wildfly-elytron</link>
         <description></description>
-        <lastBuildDate>Thu, 09 Jun 2022 14:50:30 +0000</lastBuildDate>
+        <lastBuildDate>Wed, 22 Jun 2022 15:18:56 +0000</lastBuildDate>
         
         <item>
             <title>Enabling Integrity on Filesystem realms</title>
@@ -13,7 +13,7 @@
                 https://wildfly-security.github.io/wildfly-elytron/blog/filesystem-integrity/
             </link>
             <description>
-                Previously, any data in the filesystem realm was not verified, this meant that anyone with access to the identity files, could tamper with the data without any way of knowing. Now filesystem integrity has been added by generating a signature through the use of a public-private key pair. An overview...
+                Previously, any data in the filesystem realm was not verified, this meant that anyone with access to the identity files, could tamper with the data without any way of knowing. Now support for filesystem integrity checking has been added by adding signatures to identity files. This is done using a...
             </description>
             <pubDate>Wed, 08 Jun 2022 00:00:00 +0000</pubDate>
             <guid>
