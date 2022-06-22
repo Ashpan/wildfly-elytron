@@ -177,10 +177,10 @@
 <div class="ulist">
 <ul>
 <li>
-<p><code>key-store</code>: This attribute specifies the key store resource where the key pair resides in. This key store must be configured prior to creating the filesystem realm. This attribute is optional and if not specified, the filesystem realm will not verify its integrity.</p>
+<p><code>key-store</code>: This attribute specifies the key store where the key pair is stored if the integrity is to be enabled on the filesystem realm. This attribute is optional.</p>
 </li>
 <li>
-<p><code>key-store-alias</code>: This attribute specifies the alias to the key pair in the key store to verify filesystem integrity. This attribute is required if the <code>key-store</code> attribute is specified.</p>
+<p><code>key-store-alias</code>: This attribute specifies the alias of the key pair that is stored in the previously specified key store. This attribute is optional.</p>
 </li>
 </ul>
 </div>
