@@ -5,33 +5,19 @@
         <title>WildFly Elytron</title>
         <link>https://wildfly-security.github.io/wildfly-elytron</link>
         <description></description>
-        <lastBuildDate>Thu, 07 Jul 2022 16:12:27 +0000</lastBuildDate>
+        <lastBuildDate>Tue, 19 Jul 2022 13:36:03 +0000</lastBuildDate>
         
         <item>
-            <title>Vlog: Encrypting a Filesystem Realm</title>
+            <title>Enabling Integrity on Filesystem realms</title>
             <link>
-                https://www.youtube.com/watch?v=1K92tit2uCk
+                https://wildfly-security.github.io/wildfly-elytron/blog/filesystem-integrity/
             </link>
             <description>
-                
+                Previously, any data in the filesystem realm was not verified, this meant that anyone with access to the identity files, could tamper with the data without any way of knowing. Now support for filesystem integrity checking has been added by adding signatures to identity files. This is done using a...
             </description>
-            <pubDate>Thu, 07 Jul 2022 00:00:00 +0000</pubDate>
+            <pubDate>Wed, 08 Jun 2022 00:00:00 +0000</pubDate>
             <guid>
-                https://www.youtube.com/watch?v=1K92tit2uCk
-            </guid>
-        </item>
-        
-        <item>
-            <title>Securing Jakarta Enterprise Beans with mutual TLS authentication</title>
-            <link>
-                https://wildfly-security.github.io/wildfly-elytron/blog/ejb-over-tls/
-            </link>
-            <description>
-                The ejb-mutual-tls example demonstrates how to use Elytron to secure EJBs with mutual TLS authentication. It also shows how to restrict access to EJBs, configuring a FileSystem realm protected by SASL authentication, and accessed using a credential store. This example focuses on the TLS configuration, so if you wish to...
-            </description>
-            <pubDate>Tue, 21 Jun 2022 00:00:00 +0000</pubDate>
-            <guid>
-                https://wildfly-security.github.io/wildfly-elytron/blog/ejb-over-tls/
+                https://wildfly-security.github.io/wildfly-elytron/blog/filesystem-integrity/
             </guid>
         </item>
         
@@ -144,6 +130,20 @@
             <pubDate>Fri, 17 Dec 2021 00:00:00 +0000</pubDate>
             <guid>
                 https://wildfly-security.github.io/wildfly-elytron/blog/upcoming-filesystem-encryption-integrity/
+            </guid>
+        </item>
+        
+        <item>
+            <title>Securing WildFly Apps with OpenID Connect</title>
+            <link>
+                https://wildfly-security.github.io/wildfly-elytron/blog/securing-wildfly-apps-openid-connect/
+            </link>
+            <description>
+                WildFly 25 added the ability to secure applications using OpenID Connect, without needing to make use of the Keycloak client adapter. This blog post gives an introduction to this feature. OpenID Connect New elytron-oidc-client Subsystem Deployment Configuration Subsystem Configuration Required Configuration Options OpenID Providers Securing an application using OIDC Example...
+            </description>
+            <pubDate>Fri, 17 Dec 2021 00:00:00 +0000</pubDate>
+            <guid>
+                https://wildfly-security.github.io/wildfly-elytron/blog/securing-wildfly-apps-openid-connect/
             </guid>
         </item>
         
